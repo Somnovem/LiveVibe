@@ -24,7 +24,7 @@ services:
     - livevibe-network
 
   backend:
-    image: artagan/livevibe-backend:1.1
+    image: artagan/livevibe-backend:latest
     container_name: backend
     build:
       context: .
@@ -50,7 +50,7 @@ services:
       - livevibe-network
 
   frontend:
-    image: artagan/livevibe-frontend:1.0
+    image: artagan/livevibe-frontend:latest
     container_name: frontend
     build:
       context: .
