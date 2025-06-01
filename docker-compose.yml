@@ -1,0 +1,71 @@
+﻿version: '3.8'
+
+services:
+
+  mssql:
+    container_name: mssql
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: "${DB_PASSWORD:-QweAsdZxc!23}"
+      MSSQL_PID: Express
+      MSSQL_MEMORY_LIMIT_MB: "4096"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql-data:/var/opt/mssql
+    restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "sqlcmd -S localhost -U sa -P ${DB_PASSWORD:-QweAsdZxc!23} -Q 'SELECT 1'" ]
+      interval: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+    - livevibe-network
+
+  backend:
+    image: artagan/livevibe-backend:1.1
+    container_name: backend
+    build:
+      context: .
+      dockerfile: ./Backend_Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Server=mssql,1433;Database=livevibe_db;User Id=sa;Password=${DB_PASSWORD:-QweAsdZxc!23};TrustServerCertificate=True;
+      - Database__MaxRetryCount=10
+      - Database__MaxRetryDelay=10
+      - ASPNETCORE_URLS=http://+:5000
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mssql
+    healthcheck:
+      test: curl -f http://localhost:5000/health || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: always
+    networks:
+      - livevibe-network
+
+  frontend:
+    image: artagan/livevibe-frontend:1.0
+    container_name: frontend
+    build:
+      context: .
+      dockerfile: ./Frontend_Dockerfile
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    restart: always
+    networks:
+      - livevibe-network
+
+volumes:
+  mssql-data:
+
+networks:
+  livevibe-network:
+    driver: bridge

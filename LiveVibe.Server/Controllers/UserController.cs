@@ -1,0 +1,362 @@
+﻿using LiveVibe.Server.Models.DTOs.Requests.Users;
+using LiveVibe.Server.Models.DTOs.ModelDTOs;
+using LiveVibe.Server.Models.Tables;
+using Microsoft.AspNetCore.Identity.Data;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Swashbuckle.AspNetCore.Annotations;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication;
+using LiveVibe.Server.HelperClasses;
+
+namespace LiveVibe.Server.Controllers
+{
+    [ApiController]
+    [Route("/api/users")]
+    public class UserController : Controller
+    {
+        private readonly IConfiguration _config;
+        private readonly UserManager<User> _userManager;
+        private readonly ApplicationContext _context;
+
+        public UserController(UserManager<User> userManager, IConfiguration config, ApplicationContext context)
+        {
+            _userManager = userManager;
+            _config = config;
+            _context = context;
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("all")]
+        [SwaggerOperation(Summary = "[Admin] Retrieve all users", Description = "Returns a list of all users in the database.")]
+        [SwaggerResponse(200, "Success", typeof(IEnumerable<UserDTO>))]
+        public async Task<ActionResult<IEnumerable<UserDTO>>> GetUsers(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            if (pageNumber <= 0) pageNumber = 1;
+            if (pageSize <= 0) pageSize = 10;
+
+            var users = await _userManager.Users
+                .AsNoTracking()
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(u => new UserDTO(u))
+                .ToListAsync();
+
+            var totalUsers = await _context.Users.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalUsers / (double)pageSize);
+
+            Response.Headers.Append("X-Total-Count", totalUsers.ToString());
+            Response.Headers.Append("X-Total-Pages", totalPages.ToString());
+
+            return Ok(users);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("{id:guid}")]
+        [SwaggerOperation(Summary = "[Admin] Get user by ID")]
+        [SwaggerResponse(200, "User found", typeof(User))]
+        [SwaggerResponse(404, "User not found")]
+        public async Task<IActionResult> GetUserById(Guid id)
+        {
+            var user = await _userManager.FindByIdAsync(id.ToString());
+            if (user == null)
+                return NotFound();
+
+            return Ok(user);
+        }
+
+        [HttpPost("register")]
+        [SwaggerOperation(Summary = "[Any] Register a new user", Description = "Create and authenticate a new user, and issue a JWT.")]
+        [SwaggerResponse(201, "User registered successfully")]
+        [SwaggerResponse(400, "Invalid input")]
+        [SwaggerResponse(409, "User with the same email or phone already exists")]
+        public async Task<IActionResult> RegisterUser([FromBody] CreateUserRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (await _userManager.Users.AnyAsync(u => u.Email == request.Email))
+                return Conflict("A user with this email already exists.");
+
+            if (await _userManager.Users.AnyAsync(u => u.Phone == request.Phone))
+                return Conflict("A user with this phone already exists.");
+
+            var user = new User
+            {
+                UserName = request.Email,
+                Email = request.Email,
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Phone = request.Phone,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            var result = await _userManager.CreateAsync(user, request.Password);
+            if (!result.Succeeded)
+                return BadRequest(result.Errors);
+
+            await _userManager.AddToRoleAsync(user, "User");
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            var claims = new List<Claim>
+            {
+                new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                new(JwtRegisteredClaimNames.Email, user.Email!),
+                new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new(ClaimTypes.Name, user.UserName!)
+            };
+
+            claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+
+            var token = JWTTokenGenerator.GenerateToken(_config, claims);
+
+            return CreatedAtAction(
+                nameof(GetUserById),
+                new { id = user.Id },
+                new
+                    {
+                        token = new JwtSecurityTokenHandler().WriteToken(token),
+                        token_type = "Bearer"
+                    });
+        }
+
+        [HttpPost("login")]
+        [SwaggerOperation(Summary = "[Any] Login", Description = "Authenticate user and issue a JWT.")]
+        [SwaggerResponse(200, "Login successful, JWT returned")]
+        [SwaggerResponse(401, "Invalid email or password")]
+        public async Task<IActionResult> Login([FromBody] LoginRequest model)
+        {
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null || !await _userManager.CheckPasswordAsync(user, model.Password))
+                return Unauthorized("Invalid credentials");
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            var claims = new List<Claim>
+            {
+                new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                new(JwtRegisteredClaimNames.Email, user.Email!),
+                new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new(ClaimTypes.Name, user.UserName!)
+            };
+
+            claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+
+            var token = JWTTokenGenerator.GenerateToken(_config, claims);
+
+            return Ok(new
+            {
+                token = new JwtSecurityTokenHandler().WriteToken(token),
+                token_type = "Bearer"
+            });
+        }
+
+        [Authorize]
+        [HttpGet("me")]
+        [SwaggerOperation(Summary = "[Any authorised] Get current user", Description = "Returns the currently authenticated user's information.")]
+        [SwaggerResponse(200, "Current user info returned successfully.", typeof(UserDTO))]
+        [SwaggerResponse(401, "Invalid or expired token, or user no longer exists.")]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                await HttpContext.SignOutAsync(JwtBearerDefaults.AuthenticationScheme);
+                return Unauthorized("Invalid credentials (user ID missing in token).");
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                await HttpContext.SignOutAsync(JwtBearerDefaults.AuthenticationScheme);
+                return Unauthorized("Invalid credentials (user no longer exists).");
+            }
+
+            return Ok(new UserDTO(user));
+        }
+
+        [Authorize(Roles = "User")]
+        [HttpGet("my-tickets")]
+        [SwaggerOperation(Summary = "[User] Get user's tickets.", Description = "Retrieves the tickets purchased by the logged-in user.")]
+        [SwaggerResponse(200, "Tickets retrieved successfully")]
+        [SwaggerResponse(401, "Unauthorized")]
+        public async Task<IActionResult> MyTickets()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                await HttpContext.SignOutAsync(JwtBearerDefaults.AuthenticationScheme);
+                return Unauthorized("Invalid credentials (user ID missing in token).");
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                await HttpContext.SignOutAsync(JwtBearerDefaults.AuthenticationScheme);
+                return Unauthorized("Invalid credentials (user no longer exists).");
+            }
+
+            var ticketDTOs = await _context.TicketPurchases
+                .Where(tp => tp.UserId == user.Id)
+                .Include(tp => tp.Ticket)
+                .Include(tp => tp.Ticket.SeatingCategory)
+                .Select(tp => new TicketDTO
+                {
+                    Id = tp.Ticket.Id,
+                    EventId = tp.Ticket.EventId,
+                    SeatingCategoryType = tp.Ticket.SeatingCategory.Name,
+                    Seat = tp.Ticket.Seat,
+                    Price = tp.PurchasePrice,
+                    WasRefunded = tp.WasRefunded
+                })
+                .ToListAsync();
+
+            return Ok(ticketDTOs);
+        }
+
+        [Authorize(Roles = "User,Admin")]
+        [HttpPut("update")]
+        [SwaggerOperation(Summary = "[User,Admin] Update an existing user", Description = "Updates existing user details.")]
+        [SwaggerResponse(200, "User updated successfully", typeof(UserDTO))]
+        [SwaggerResponse(400, "Invalid input")]
+        [SwaggerResponse(404, "User not found")]
+        public async Task<IActionResult> UpdateUser([FromBody] UpdateUserRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var user = await _userManager.FindByIdAsync(request.Id.ToString());
+
+            if (user == null)
+                return NotFound($"No user found with ID {request.Id}");
+
+            user.FirstName = request.FirstName;
+            user.LastName = request.LastName;
+            user.Phone = request.Phone;
+            user.Email = request.Email;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            var result = await _userManager.UpdateAsync(user);
+
+            if (!result.Succeeded)
+                return BadRequest("Failed to update user.");
+
+            return Ok(new UserDTO(user));
+        }
+
+        [Authorize(Roles = "User,Admin")]
+        [HttpPost("change-password")]
+        [SwaggerOperation(Summary = "[User,Admin] Change a user's password", Description = "User must provide their current password to change it.")]
+        [SwaggerResponse(200, "Password changed successfully")]
+        [SwaggerResponse(400, "Validation failed")]
+        [SwaggerResponse(404, "User not found")]
+        [SwaggerResponse(403, "Current password is incorrect or new password is the same")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var user = await _userManager.FindByIdAsync(request.Id.ToString());
+            if (user == null)
+                return NotFound("User not found.");
+
+
+            if (! await _userManager.CheckPasswordAsync(user, request.CurrentPassword))
+                return StatusCode(403, "Current password is incorrect.");
+
+            if (request.CurrentPassword == request.NewPassword)
+                return StatusCode(403, "New password must be different from the current password.");
+
+            await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+
+            user.UpdatedAt = DateTime.UtcNow;
+
+            var result = await _userManager.UpdateAsync(user);
+
+            if (!result.Succeeded)
+                return BadRequest("Failed to update user.");
+
+            return Ok("Password changed successfully.");
+        }
+
+        [Authorize(Roles = "User")]
+        [HttpDelete("delete")]
+        [SwaggerOperation(Summary = "[User] Delete your account", Description = "Deletes the currently logged-in user's account.")]
+        [SwaggerResponse(200, "User deleted successfully")]
+        [SwaggerResponse(400, "Failed to delete user")]
+        [SwaggerResponse(401, "Unauthorized or invalid token")]
+        [SwaggerResponse(404, "User not found")]
+        public async Task<IActionResult> DeleteUser()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                await HttpContext.SignOutAsync(JwtBearerDefaults.AuthenticationScheme);
+                return Unauthorized("Invalid credentials: user ID missing from token.");
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                await HttpContext.SignOutAsync(JwtBearerDefaults.AuthenticationScheme);
+                return Unauthorized("Invalid credentials: user no longer exists.");
+            }
+
+            var result = await _userManager.DeleteAsync(user);
+            if (!result.Succeeded)
+                return BadRequest("Failed to delete user.");
+
+            await HttpContext.SignOutAsync(JwtBearerDefaults.AuthenticationScheme);
+
+            return Ok("User deleted successfully.");
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("delete/{id:guid}")]
+        [SwaggerOperation(Summary = "[Admin] Delete a user", Description = "Deletes the user with the specified ID. Admin only.")]
+        [SwaggerResponse(200, "User deleted successfully")]
+        [SwaggerResponse(400, "Invalid input")]
+        [SwaggerResponse(404, "User not found")]
+        public async Task<IActionResult> DeleteUser(Guid id)
+        {
+            var user = await _userManager.FindByIdAsync(id.ToString());
+            if (user == null)
+                return NotFound("User not found.");
+
+            var result = await _userManager.DeleteAsync(user);
+            if (!result.Succeeded)
+                return BadRequest("Failed to delete user.");
+
+            return Ok("User deleted successfully.");
+        }
+
+        [Authorize(Roles = "SuperAdmin")]
+        [HttpPost("promote-to-admin/{userId:guid}")]
+        [SwaggerOperation(Summary = "[SuperAdmin] Promote a user to admin", Description = "If provided with an Id of a regular user, promotes them to admin. SuperAdmin only.")]
+        [SwaggerResponse(200, "User promoted to admin successfully.")]
+        [SwaggerResponse(400, "User is already an admin.")]
+        [SwaggerResponse(404, "User not found.")]
+        public async Task<IActionResult> PromoteUserToAdmin(Guid userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user == null)
+                return NotFound("User not found.");
+
+            var roles = await _userManager.GetRolesAsync(user);
+            if (roles.Contains("Admin"))
+                return BadRequest("Already an admin.");
+
+            await _userManager.AddToRoleAsync(user, "User");
+            return Ok("User promoted to admin successfully.");
+        }
+    }
+}

@@ -1,0 +1,28 @@
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+WORKDIR /app
+EXPOSE 5000
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+COPY ["LiveVibe.Server/LiveVibe.Server.csproj", "LiveVibe.Server/"]
+RUN dotnet restore "LiveVibe.Server/LiveVibe.Server.csproj"
+COPY . .
+WORKDIR "/src/LiveVibe.Server"
+RUN dotnet build "LiveVibe.Server.csproj" -c Release -o /app/build
+
+FROM build AS publish
+RUN dotnet publish "LiveVibe.Server.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+COPY LiveVibe.Server/appsettings*.json ./
+COPY LiveVibe.Server/Scripts ./Scripts/
+
+# Install curl for healthcheck
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Set ASP.NET Core environment
+ENV ASPNETCORE_ENVIRONMENT=Production
+
+ENTRYPOINT ["dotnet", "LiveVibe.Server.dll"] 
