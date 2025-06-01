@@ -7,7 +7,7 @@ namespace LiveVibe.Server.Models.Tables
     public class ApplicationContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     {
         public DbSet<Organizer> Organizers { get; set; } = null!;
-        public DbSet<Country> Countries { get; set; } = null!;
+        public DbSet<City> Cities { get; set; } = null!;
         public DbSet<Ticket> Tickets { get; set; } = null!;
         public DbSet<TicketPurchase> TicketPurchases { get; set; } = null!;
         public DbSet<EventSeatType> EventSeatTypes { get; set; } = null!;
@@ -26,12 +26,6 @@ namespace LiveVibe.Server.Models.Tables
 
             modelBuilder.Entity<TicketPurchase>()
                 .ToTable("Ticket_Purchases", table => table.HasTrigger("trg_DecreaseSeatsOnPurchase"));
-
-            //modelBuilder.Entity<TicketPurchase>()
-            //    .Property(p => p.WasRefunded)
-            //    .Metadata.SetAfterSaveBehavior(
-            //        Microsoft.EntityFrameworkCore.Metadata.PropertySaveBehavior.Ignore
-            //    );
         }
 
     }

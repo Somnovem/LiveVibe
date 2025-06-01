@@ -9,7 +9,7 @@ namespace LiveVibe.Server.Models.DTOs.ModelDTOs
         public string? Description { get; set; }
         public string Organizer { get; set; } = null!;
         public string Category { get; set; } = null!;
-        public string Country { get; set; } = null!;
+        public string City { get; set; } = null!;
         public string Location { get; set; } = null!;
         public DateTime Time { get; set; }
         public string? ImageUrl { get; set; }
@@ -24,7 +24,7 @@ namespace LiveVibe.Server.Models.DTOs.ModelDTOs
                     : null;
                 Organizer = _event.Organizer.Name;
                 Category = _event.EventCategory.Name;
-                Country = _event.Country.Name;
+                City = _event.City.Name;
                 Location = _event.Location;
                 Time = _event.Time;
                 ImageUrl = _event.ImageUrl;

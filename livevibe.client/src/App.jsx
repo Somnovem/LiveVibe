@@ -19,7 +19,7 @@ function App() {
                     <th>Description</th>
                     <th>Organizer</th>
                     <th>Category</th>
-                    <th>Country</th>
+                    <th>City</th>
                     <th>Location</th>
                     <th>Time</th>
                     <th>Image</th>
@@ -33,7 +33,7 @@ function App() {
                         <td>{event.description}</td>
                         <td>{event.organizer}</td>
                         <td>{event.category}</td>
-                        <td>{event.country}</td>
+                        <td>{event.city}</td>
                         <td>{event.location}</td>
                         <td>{event.time}</td>
                         <td><img src={baseUrl + event.imageUrl} alt={event.title} style={{width: '100px', height: '100px', objectFit: 'cover'}}/></td>
@@ -54,6 +54,7 @@ function App() {
         const response = await fetch('/api/events/featured');
         if (response.ok) {
             const data = await response.json();
+            console.log(data);
             setEvents(data);
         }
     }

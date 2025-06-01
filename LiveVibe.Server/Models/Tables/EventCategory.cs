@@ -10,7 +10,7 @@ namespace LiveVibe.Server.Models.Tables
         public Guid Id { get; set; }
 
         [Required]
-        [Column(TypeName = "varchar(100)")]
+        [Column(TypeName = "nvarchar(100)")]
         public string Name { get; set; } = string.Empty;
 
         public virtual ICollection<Event> Events { get; set; } = new List<Event>();

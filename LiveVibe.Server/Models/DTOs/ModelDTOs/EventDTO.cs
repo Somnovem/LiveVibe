@@ -10,7 +10,7 @@ namespace LiveVibe.Server.Models.DTOs.ModelDTOs
         public string Organizer { get; set; } = string.Empty;
         public string Category { get; set; } = string.Empty;
         public string Location { get; set; } = string.Empty;
-        public string Country { get; set; } = string.Empty;
+        public string City { get; set; } = string.Empty;
         public DateTime Time { get; set; }
         public string? ImageUrl { get; set; }
         public DateTime CreatedAt { get; set; }

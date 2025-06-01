@@ -23,7 +23,7 @@ namespace LiveVibe.Server.Models.DTOs.Requests.Events
         public required string Location { get; set; }
 
         [Required]
-        public required Guid CountryId { get; set; }
+        public required Guid CityId { get; set; }
 
         [Required, DataType(DataType.DateTime)]
         public required DateTime Time { get; set; }

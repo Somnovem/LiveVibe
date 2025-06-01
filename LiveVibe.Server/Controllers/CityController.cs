@@ -1,0 +1,139 @@
+﻿using LiveVibe.Server.Models.DTOs.Requests.Countries;
+using LiveVibe.Server.Models.Tables;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Swashbuckle.AspNetCore.Annotations;
+
+namespace LiveVibe.Server.Controllers
+{
+    [ApiController]
+    [Route("/api/cities")]
+    public class CityController : Controller
+    {
+
+        private readonly ApplicationContext _context;
+
+        public CityController(ApplicationContext db)
+        {
+            _context = db;
+        }
+
+        [HttpGet("all")]
+        [SwaggerOperation(Summary = "[Any] Retrieve all cities", Description = "Returns a list of all cities in the database.")]
+        [SwaggerResponse(200, "Success", typeof(IEnumerable<string>))]
+        public async Task<IEnumerable<string>> GetCities(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
+        {
+
+            if (pageNumber <= 0) pageNumber = 1;
+            if (pageSize <= 0) pageSize = 10;
+
+            var totalCities = await _context.Cities.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCities / (double)pageSize);
+
+            Response.Headers.Append("X-Total-Count", totalCities.ToString());
+            Response.Headers.Append("X-Total-Pages", totalPages.ToString());
+
+            return await _context.Cities.AsNoTracking()
+                                              .Select(e => e.Name)
+                                              .Skip((pageNumber - 1) * pageSize)
+                                              .Take(pageSize)
+                                              .ToListAsync();
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("{id:guid}")]
+        [SwaggerOperation(Summary = "[Admin] Get city by ID")]
+        [SwaggerResponse(200, "City found", typeof(City))]
+        [SwaggerResponse(404, "City not found")]
+        public async Task<ActionResult<City>> GetCityById(Guid id)
+        {
+            var city = await _context.Cities.FindAsync(id);
+            if (city == null)
+                return NotFound();
+
+            return Ok(city);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("create")]
+        [SwaggerOperation(Summary = "[Admin] Create a new city", Description = "If provided with valid data, create a new city.")]
+        [SwaggerResponse(201, "City created successfully", typeof(City))]
+        [SwaggerResponse(400, "Invalid input")]
+        [SwaggerResponse(409, "City with the same name already exists")]
+        public async Task<ActionResult<City>> CreateCity([FromBody] CreateCityRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            bool nameExists = await _context.Cities.AnyAsync(u => u.Name == request.Name);
+            if (nameExists)
+            {
+                return Conflict("A city with this name already exists.");
+            }
+
+            var city = new City
+            {
+                Id = Guid.NewGuid(),
+                Name = request.Name
+            };
+
+            _context.Cities.Add(city);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(
+                nameof(GetCityById),
+                new { id = city.Id },
+                city
+            );
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("update")]
+        [SwaggerOperation(Summary = "[Admin] Update an existing city", Description = "Updates existing city details.")]
+        [SwaggerResponse(200, "City updated successfully", typeof(City))]
+        [SwaggerResponse(400, "Invalid input")]
+        [SwaggerResponse(404, "City not found")]
+        public async Task<ActionResult<City>> UpdateCity([FromBody] UpdateCityRequest request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var city = await _context.Cities.FirstOrDefaultAsync(u => u.Id == request.Id);
+            if (city == null)
+                return NotFound($"No city found with ID {request.Id}");
+
+            city.Name = request.Name;
+
+            _context.Cities.Update(city);
+            await _context.SaveChangesAsync();
+
+            return Ok(city);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("delete/{id:guid}")]
+        [SwaggerOperation(Summary = "[Admin] Delete a city", Description = "Deletes the city with the specified ID.")]
+        [SwaggerResponse(200, "City deleted successfully")]
+        [SwaggerResponse(400, "Invalid input")]
+        [SwaggerResponse(404, "City not found")]
+        public async Task<IActionResult> DeleteCity(Guid id)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var city = await _context.Cities.FirstOrDefaultAsync(u => u.Id == id);
+            if (city == null)
+                return NotFound("City not found.");
+
+            _context.Cities.Remove(city);
+            await _context.SaveChangesAsync();
+
+            return Ok("City deleted successfully.");
+        }
+    }
+}

@@ -10,10 +10,10 @@ namespace LiveVibe.Server.Models.Tables
         public Guid Id { get; set; }
 
         [Required]
-        [Column(TypeName = "varchar(255)")]
+        [Column(TypeName = "nvarchar(255)")]
         public string Title { get; set; } = string.Empty;
 
-        [Column(TypeName = "text")]
+        [Column(TypeName = "nvarchar(1000)")]
         public string? Description { get; set; }
 
         [Required]
@@ -26,12 +26,12 @@ namespace LiveVibe.Server.Models.Tables
         public Guid CategoryId { get; set; }
 
         [Required]
-        [Column(TypeName = "varchar(255)")]
+        [Column(TypeName = "nvarchar(255)")]
         public string Location { get; set; } = string.Empty;
 
         [Required]
         [Column(TypeName = "uniqueidentifier")]
-        public Guid CountryId { get; set; }
+        public Guid CityId { get; set; }
 
         [Required]
         [Column(TypeName = "datetime2")]
@@ -50,7 +50,7 @@ namespace LiveVibe.Server.Models.Tables
 
         public virtual Organizer Organizer { get; set; } = null!;
         public virtual EventCategory EventCategory { get; set; } = null!;
-        public virtual Country Country { get; set; } = null!;
+        public virtual City City { get; set; } = null!;
         public virtual ICollection<EventSeatType> EventSeatTypes { get; set; } = new List<EventSeatType>();
         public virtual ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
     }

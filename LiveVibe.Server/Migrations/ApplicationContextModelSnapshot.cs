@@ -17,12 +17,12 @@ namespace LiveVibe.Server.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.4")
+                .HasAnnotation("ProductVersion", "8.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("LiveVibe.Server.Models.Tables.Country", b =>
+            modelBuilder.Entity("LiveVibe.Server.Models.Tables.City", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -30,11 +30,11 @@ namespace LiveVibe.Server.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Countries");
+                    b.ToTable("Cities");
                 });
 
             modelBuilder.Entity("LiveVibe.Server.Models.Tables.Event", b =>
@@ -46,21 +46,21 @@ namespace LiveVibe.Server.Migrations
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("CountryId")
+                    b.Property<Guid>("CityId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
-                        .HasColumnType("text");
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("ImageUrl")
                         .HasColumnType("varchar(255)");
 
                     b.Property<string>("Location")
                         .IsRequired()
-                        .HasColumnType("varchar(255)");
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<Guid>("OrganizerId")
                         .HasColumnType("uniqueidentifier");
@@ -70,7 +70,7 @@ namespace LiveVibe.Server.Migrations
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("varchar(255)");
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -79,7 +79,7 @@ namespace LiveVibe.Server.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.HasIndex("CountryId");
+                    b.HasIndex("CityId");
 
                     b.HasIndex("OrganizerId");
 
@@ -94,7 +94,7 @@ namespace LiveVibe.Server.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
@@ -118,7 +118,7 @@ namespace LiveVibe.Server.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<double>("Price")
                         .HasColumnType("float");
@@ -145,7 +145,7 @@ namespace LiveVibe.Server.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Phone")
                         .IsRequired()
@@ -244,11 +244,11 @@ namespace LiveVibe.Server.Migrations
 
                     b.Property<string>("FirstName")
                         .IsRequired()
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("LastName")
                         .IsRequired()
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
@@ -446,9 +446,9 @@ namespace LiveVibe.Server.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("LiveVibe.Server.Models.Tables.Country", "Country")
+                    b.HasOne("LiveVibe.Server.Models.Tables.City", "City")
                         .WithMany("Events")
-                        .HasForeignKey("CountryId")
+                        .HasForeignKey("CityId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -458,7 +458,7 @@ namespace LiveVibe.Server.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Country");
+                    b.Navigation("City");
 
                     b.Navigation("EventCategory");
 
@@ -468,7 +468,7 @@ namespace LiveVibe.Server.Migrations
             modelBuilder.Entity("LiveVibe.Server.Models.Tables.EventSeatType", b =>
                 {
                     b.HasOne("LiveVibe.Server.Models.Tables.Event", "Event")
-                        .WithMany()
+                        .WithMany("EventSeatTypes")
                         .HasForeignKey("EventId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -479,13 +479,13 @@ namespace LiveVibe.Server.Migrations
             modelBuilder.Entity("LiveVibe.Server.Models.Tables.Ticket", b =>
                 {
                     b.HasOne("LiveVibe.Server.Models.Tables.Event", "Event")
-                        .WithMany()
+                        .WithMany("Tickets")
                         .HasForeignKey("EventId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("LiveVibe.Server.Models.Tables.EventSeatType", "SeatingCategory")
-                        .WithMany()
+                        .WithMany("Tickets")
                         .HasForeignKey("SeatingCategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -565,14 +565,26 @@ namespace LiveVibe.Server.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("LiveVibe.Server.Models.Tables.Country", b =>
+            modelBuilder.Entity("LiveVibe.Server.Models.Tables.City", b =>
                 {
                     b.Navigation("Events");
+                });
+
+            modelBuilder.Entity("LiveVibe.Server.Models.Tables.Event", b =>
+                {
+                    b.Navigation("EventSeatTypes");
+
+                    b.Navigation("Tickets");
                 });
 
             modelBuilder.Entity("LiveVibe.Server.Models.Tables.EventCategory", b =>
                 {
                     b.Navigation("Events");
+                });
+
+            modelBuilder.Entity("LiveVibe.Server.Models.Tables.EventSeatType", b =>
+                {
+                    b.Navigation("Tickets");
                 });
 
             modelBuilder.Entity("LiveVibe.Server.Models.Tables.Organizer", b =>

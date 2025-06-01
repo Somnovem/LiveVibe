@@ -22,7 +22,7 @@ namespace LiveVibe.Server.HelperClasses
             await SeedRolesAsync();
             await SeedUsersAsync();
             await SeedAdminsAsync();
-            await SeedCountriesAsync();
+            await SeedCitiesAsync();
             await SeedEventCategoriesAsync();
             await SeedOrganizersAsync();
             await SeedEventsAsync();
@@ -124,56 +124,42 @@ namespace LiveVibe.Server.HelperClasses
             await _userManager.AddToRoleAsync(superAdminUser, "SuperAdmin");
         }
 
-        private static async Task SeedCountriesAsync()
+        private static async Task SeedCitiesAsync()
         {
+            if (_context!.Cities.Any()) return;
 
-            if (_context!.Countries.Any()) return;
-
-            var countries = new List<Country>
+            var cities = new List<City>
                 {
-                    new() { Id = CountryIds.Ukraine, Name = "Ukraine" },
-                    new() { Id = CountryIds.UnitedStates, Name = "United States" },
-                    new() { Id = CountryIds.UnitedKingdom, Name = "United Kingdom" },
-                    new() { Id = CountryIds.Germany, Name = "Germany" },
-                    new() { Id = CountryIds.France, Name = "France" },
-                    new() { Id = CountryIds.Australia, Name = "Australia" },
-                    new() { Id = CountryIds.Japan, Name = "Japan" },
-                    new() { Id = CountryIds.Brazil, Name = "Brazil" },
-                    new() { Id = CountryIds.India, Name = "India" },
-                    new() { Id = CountryIds.SouthAfrica, Name = "South Africa" },
-                    new() { Id = CountryIds.Spain, Name = "Spain" },
-                    new() { Id = CountryIds.Italy, Name = "Italy" },
-                    new() { Id = CountryIds.Mexico, Name = "Mexico" },
-                    new() { Id = CountryIds.SouthKorea, Name = "South Korea" },
-                    new() { Id = CountryIds.China, Name = "China" },
-                    new() { Id = CountryIds.Canada, Name = "Canada" },
-                    new() { Id = CountryIds.Argentina, Name = "Argentina" },
-                    new() { Id = CountryIds.Netherlands, Name = "Netherlands" },
-                    new() { Id = CountryIds.Sweden, Name = "Sweden" },
-                    new() { Id = CountryIds.Norway, Name = "Norway" },
-                    new() { Id = CountryIds.Finland, Name = "Finland" },
-                    new() { Id = CountryIds.Denmark, Name = "Denmark" },
-                    new() { Id = CountryIds.Belgium, Name = "Belgium" },
-                    new() { Id = CountryIds.Portugal, Name = "Portugal" },
-                    new() { Id = CountryIds.NewZealand, Name = "New Zealand" },
-                    new() { Id = CountryIds.Switzerland, Name = "Switzerland" },
-                    new() { Id = CountryIds.Poland, Name = "Poland" },
-                    new() { Id = CountryIds.Turkey, Name = "Turkey" },
-                    new() { Id = CountryIds.Greece, Name = "Greece" },
-                    new() { Id = CountryIds.Ireland, Name = "Ireland" },
-                    new() { Id = CountryIds.CzechRepublic, Name = "Czech Republic" },
-                    new() { Id = CountryIds.Austria, Name = "Austria" },
-                    new() { Id = CountryIds.Israel, Name = "Israel" },
-                    new() { Id = CountryIds.Singapore, Name = "Singapore" },
-                    new() { Id = CountryIds.Malaysia, Name = "Malaysia" },
-                    new() { Id = CountryIds.Egypt, Name = "Egypt" },
-                    new() { Id = CountryIds.Nigeria, Name = "Nigeria" },
-                    new() { Id = CountryIds.Kenya, Name = "Kenya" },
-                    new() { Id = CountryIds.Thailand, Name = "Thailand" },
-                    new() { Id = CountryIds.Philippines, Name = "Philippines" },
+                    new() { Id = CityIds.Kyiv, Name = "Київ" },
+                    new() { Id = CityIds.Kharkiv, Name = "Харків" },
+                    new() { Id = CityIds.Odesa, Name = "Одеса" },
+                    new() { Id = CityIds.Dnipro, Name = "Дніпро" },
+                    new() { Id = CityIds.Donetsk, Name = "Донецьк" },
+                    new() { Id = CityIds.Zaporizhzhia, Name = "Запоріжжя" },
+                    new() { Id = CityIds.Lviv, Name = "Львів" },
+                    new() { Id = CityIds.Kryvyi_Rih, Name = "Кривий Ріг" },
+                    new() { Id = CityIds.Mykolaiv, Name = "Миколаїв" },
+                    new() { Id = CityIds.Mariupol, Name = "Маріуполь" },
+                    new() { Id = CityIds.Luhansk, Name = "Луганськ" },
+                    new() { Id = CityIds.Vinnytsia, Name = "Вінниця" },
+                    new() { Id = CityIds.Makiivka, Name = "Макіївка" },
+                    new() { Id = CityIds.Sevastopol, Name = "Севастополь" },
+                    new() { Id = CityIds.Simferopol, Name = "Сімферополь" },
+                    new() { Id = CityIds.Chernivtsi, Name = "Чернівці" },
+                    new() { Id = CityIds.Poltava, Name = "Полтава" },
+                    new() { Id = CityIds.Kherson, Name = "Херсон" },
+                    new() { Id = CityIds.Cherkasy, Name = "Черкаси" },
+                    new() { Id = CityIds.Khmelnytskyi, Name = "Хмельницький" },
+                    new() { Id = CityIds.Zhytomyr, Name = "Житомир" },
+                    new() { Id = CityIds.Sumy, Name = "Суми" },
+                    new() { Id = CityIds.Rivne, Name = "Рівне" },
+                    new() { Id = CityIds.Ivano_Frankivsk, Name = "Івано-Франківськ" },
+                    new() { Id = CityIds.Ternopil, Name = "Тернопіль" },
+                    new() { Id = CityIds.Lutsk, Name = "Луцьк" },
+                    new() { Id = CityIds.Uzhhorod, Name = "Ужгород" }
                 };
 
-            _context.Countries.AddRange(countries);
+            _context.Cities.AddRange(cities);
             await _context.SaveChangesAsync();
         }
 
@@ -183,14 +169,14 @@ namespace LiveVibe.Server.HelperClasses
 
             var categories = new List<EventCategory>
                 {
-                    new() { Id = EventCategoryIds.Concert, Name = "Concert" },
-                    new() { Id = EventCategoryIds.Festival, Name = "Festival" },
-                    new() { Id = EventCategoryIds.Conference, Name = "Conference" },
-                    new() { Id = EventCategoryIds.Sports, Name = "Sports" },
-                    new() { Id = EventCategoryIds.Theater, Name = "Theater" },
-                    new() { Id = EventCategoryIds.Workshop, Name = "Workshop" },
-                    new() { Id = EventCategoryIds.Exhibition, Name = "Exhibition" },
-                    new() { Id = EventCategoryIds.Meetup, Name = "Meetup" },
+                    new() { Id = EventCategoryIds.Concert, Name = "Концерт" },
+                    new() { Id = EventCategoryIds.Festival, Name = "Фестиваль" },
+                    new() { Id = EventCategoryIds.Conference, Name = "З'їзд" },
+                    new() { Id = EventCategoryIds.Sports, Name = "Спортивний захід" },
+                    new() { Id = EventCategoryIds.Theater, Name = "Вистава" },
+                    new() { Id = EventCategoryIds.Workshop, Name = "Інтерактив" },
+                    new() { Id = EventCategoryIds.Exhibition, Name = "Виставка" },
+                    new() { Id = EventCategoryIds.Standup, Name = "Стендап" },
                 };
 
             _context.EventCategories.AddRange(categories);
@@ -269,12 +255,12 @@ namespace LiveVibe.Server.HelperClasses
                     new()
                     {
                         Id = EventIds.MusicFest,
-                        Title = "Summer Music Fest 2025",
-                        Description = "Join top artists in a weekend of music and fun.",
+                        Title = "ОДИН В КАНОЕ",
+                        Description = "Магія звучання, Щирість замість байдужості, Осінь, що відчувається влітку, Вулиця, яка лишається пустою опівночі, Тиша, що нагадує запитання без відповіді, Музика, де кожна пауза - це нота, Подих - кожен, немов останній. Проживемо все це разом із вами.",
                         OrganizerId = OrganizerIds.LiveNation,
-                        CategoryId = EventCategoryIds.Festival,
-                        Location = "Central Park, New York",
-                        CountryId = CountryIds.UnitedStates,
+                        CategoryId = EventCategoryIds.Concert,
+                        Location = "МЦКМ (Жовтневий палац)",
+                        CityId = CityIds.Kyiv,
                         Time = now.AddMonths(1),
                         CreatedAt = now,
                         UpdatedAt = now,
@@ -283,12 +269,12 @@ namespace LiveVibe.Server.HelperClasses
                     new()
                     {
                         Id = EventIds.FoodCarnival,
-                        Title = "Global Food Carnival",
-                        Description = "Taste dishes from around the world.",
+                        Title = "Серцеїдки",
+                        Description = "На вас чекає феєрверк яскравих акторських робіт у супроводі музики та танців. Вистава, що надихатиме вас на справжні почуття.",
                         OrganizerId = OrganizerIds.EventCo,
-                        CategoryId = EventCategoryIds.Festival,
-                        Location = "Hyde Park, London",
-                        CountryId = CountryIds.UnitedKingdom,
+                        CategoryId = EventCategoryIds.Theater,
+                        Location = "Центральний будинок збройних сил України",
+                        CityId = CityIds.Kyiv,
                         Time = now.AddMonths(2),
                         CreatedAt = now,
                         UpdatedAt = now,
@@ -297,12 +283,12 @@ namespace LiveVibe.Server.HelperClasses
                     new()
                     {
                         Id = EventIds.TechExpo,
-                        Title = "Tech Expo Europe",
-                        Description = "Latest innovations in AI, robotics, and more.",
+                        Title = "Стендап на трьох",
+                        Description = "Стендап На Трьох - це івент, який обіцяє вам незабутній досвід сміху і розваг! Це місце, де досвідчені коміки зберуться, щоб перевірити свій новий матеріал зал і зарядити вас позитивною енергією.",
                         OrganizerId = OrganizerIds.GlobalStage,
-                        CategoryId = EventCategoryIds.Exhibition,
-                        Location = "Berlin Messe, Berlin",
-                        CountryId = CountryIds.Germany,
+                        CategoryId = EventCategoryIds.Standup,
+                        Location = "Бочка Pub",
+                        CityId = CityIds.Kyiv,
                         Time = now.AddMonths(3),
                         CreatedAt = now,
                         UpdatedAt = now,
@@ -311,12 +297,12 @@ namespace LiveVibe.Server.HelperClasses
                     new()
                     {
                         Id = EventIds.ArtFair,
-                        Title = "International Art Fair",
-                        Description = "Exhibitions from global artists.",
+                        Title = "Леви на Джипі. Birthday Tour",
+                        Description = "Шість років нашому проєкту і ми хочемо цю дату розділити у вашому місті разом з нашими підписниками. Коміки Микола Зирянов, Валік Міхієнко, Роман Щербан та Костя Трембовецький імпровізуватимуть з залом про загальні речі та конкретні теми, які будуть обговорюватись в окремому Телеграм-каналі кожного концерту. Частина відповідей та голосувань буде народжуватись під час розмови з вами. До зустрічі у вашому місті, святкуємо день народження разом!\r\nТакож шукайте в своїх електронних квиточках посилання на окремий Телеграм-чат концерту, воно буде біля штрих-коду.",
                         OrganizerId = OrganizerIds.UrbanPulse,
-                        CategoryId = EventCategoryIds.Exhibition,
-                        Location = "Louvre Museum, Paris",
-                        CountryId = CountryIds.France,
+                        CategoryId = EventCategoryIds.Standup,
+                        Location = "Івано-Франківський театр ім. І. Франка",
+                        CityId = CityIds.Ivano_Frankivsk,
                         Time = now.AddMonths(2),
                         CreatedAt = now,
                         UpdatedAt = now,
@@ -325,12 +311,12 @@ namespace LiveVibe.Server.HelperClasses
                     new()
                     {
                         Id = EventIds.JazzNight,
-                        Title = "Jazz Night Live",
-                        Description = "An evening of live jazz performances.",
+                        Title = "СУСІДИ СТЕРПЛЯТЬ",
+                        Description = "Довгоочікуваний концерт вашого улюбленого гурту.",
                         OrganizerId = OrganizerIds.ZenithEvents,
                         CategoryId = EventCategoryIds.Concert,
-                        Location = "Opera House, Sydney",
-                        CountryId = CountryIds.Australia,
+                        Location = "Італійський Двір Одеської Філармонії",
+                        CityId = CityIds.Odesa,
                         Time = now.AddDays(20),
                         CreatedAt = now,
                         UpdatedAt = now,
@@ -339,12 +325,12 @@ namespace LiveVibe.Server.HelperClasses
                     new()
                     {
                         Id = EventIds.BroadwayPlay,
-                        Title = "Broadway's Phantom Revival",
-                        Description = "An exclusive return of Phantom of the Opera on Broadway.",
+                        Title = "Конотопська відьма",
+                        Description = "Вистава отримала неоднозначні відгуки та реакцію як від критиків, так і від аудиторії. Деякі вважають, що вона сміливо порушує важливі теми, тоді як інші критикують її за надмірну експериментальність. Однак усі погоджуються, що «Конотопська відьма» є важливим та неоціненим внеском у розвиток та розуміння сучасного українського театру, який намагається переосмислити традиційні культурні наративи та розкрити нові соціальні значення.",
                         OrganizerId = OrganizerIds.LiveNation,
                         CategoryId = EventCategoryIds.Theater,
-                        Location = "Majestic Theatre, New York",
-                        CountryId = CountryIds.UnitedStates,
+                        Location = "Чернівецький музично-драматичний театр ім. О. Кобилянської",
+                        CityId = CityIds.Chernivtsi,
                         Time = now.AddMonths(1).AddDays(10),
                         CreatedAt = now,
                         UpdatedAt = now,
@@ -353,18 +339,17 @@ namespace LiveVibe.Server.HelperClasses
                     new()
                     {
                         Id = EventIds.ShakespeareNight,
-                        Title = "Shakespeare Night: Hamlet Live",
-                        Description = "Experience Hamlet as it was meant to be—live on stage.",
+                        Title = "Віктор Павлік & Великий Симфонічний Оркестр",
+                        Description = "Віктор Павлік & Великий Симфонічний Оркестр\r\n\r\nЮвілейний концерт в Тернополі!\r\n\r\nЦього року народному артисту України Віктору Павліку виповнюється 60 років. І він відзначає свій ювілей так, як личить справжньому маестро – великим концертом у супроводі симфонічного оркестру на сцені  ПК Березіль\r\n\r\nЦе буде не просто концерт – це музична подорож крізь роки, спогади та почуття. Віктор Павлік – легенда української естради, артист, який подарував кільком поколінням слухачів щирість і справжню музику. Його голос – це емоція, це історія, це душа.",
                         OrganizerId = OrganizerIds.EventCo,
-                        CategoryId = EventCategoryIds.Theater,
-                        Location = "Taras Shevchenko National Opera, Kyiv",
-                        CountryId = CountryIds.Ukraine,
+                        CategoryId = EventCategoryIds.Concert,
+                        Location = "ПК Березіль",
+                        CityId = CityIds.Ternopil,
                         Time = now.AddMonths(-2),
                         CreatedAt = now,
                         UpdatedAt = now,
                         ImageUrl = "/images/events/f4117d94-f1f1-44a3-a50e-8b2be25ff437.jpg"
                     },
-
                 };
 
             _context.Events.AddRange(events);

@@ -8,11 +8,11 @@ namespace LiveVibe.Server.Models.Tables
     public class User : IdentityUser<Guid>
     {
         [Required]
-        [Column(TypeName = "varchar(100)")]
+        [Column(TypeName = "nvarchar(100)")]
         public string FirstName { get; set; } = string.Empty;
 
         [Required]
-        [Column(TypeName = "varchar(100)")]
+        [Column(TypeName = "nvarchar(100)")]
         public string LastName { get; set; } = string.Empty;
 
         [Required]

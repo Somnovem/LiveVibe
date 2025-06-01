@@ -14,7 +14,7 @@ namespace LiveVibe.Server.Models.Tables
         public Guid EventId { get; set; }
 
         [Required]
-        [Column(TypeName = "varchar(100)")]
+        [Column(TypeName = "nvarchar(100)")]
         public string Name { get; set; } = string.Empty;
 
         [Required]

@@ -57,7 +57,7 @@ namespace LiveVibe.Server.Controllers
             var _event = await _context.Events
                 .Include(e => e.Organizer)
                 .Include(e => e.EventCategory)
-                .Include(e => e.Country)
+                .Include(e => e.City)
                 .Include(e => e.EventSeatTypes)
                 .FirstOrDefaultAsync(e => e.Id == id);
 
@@ -71,7 +71,7 @@ namespace LiveVibe.Server.Controllers
                 Description = _event.Description,
                 Organizer = _event.Organizer.Name,
                 Category = _event.EventCategory.Name,
-                Country = _event.Country.Name,
+                City = _event.City.Name,
                 Location = _event.Location,
                 Time = _event.Time,
                 ImageUrl = _event.ImageUrl,
@@ -89,7 +89,7 @@ namespace LiveVibe.Server.Controllers
         [HttpGet("search")]
         [SwaggerOperation(
             Summary = "[Any] Search for events with filtering and pagination.",
-            Description = "Search events based on filters like title, category, country, and date range. Supports pagination via PageNumber and PageSize."
+            Description = "Search events based on filters like title, category, city, and date range. Supports pagination via PageNumber and PageSize."
         )]
         [SwaggerResponse(200, "Success", typeof(IEnumerable<ShortEventDTO>))]
         [SwaggerResponse(400, "Invalid request")]
@@ -102,7 +102,7 @@ namespace LiveVibe.Server.Controllers
                 .AsNoTracking()
                 .Include(e => e.Organizer)
                 .Include(e => e.EventCategory)
-                .Include(e => e.Country)
+                .Include(e => e.City)
                 .Include(e => e.EventSeatTypes)
                 .Where(e => e.Time >= DateTime.UtcNow);
 
@@ -112,8 +112,8 @@ namespace LiveVibe.Server.Controllers
             if (!string.IsNullOrWhiteSpace(searchRequest.Category))
                 query = query.Where(e => e.EventCategory.Name == searchRequest.Category.Trim());
 
-            if (!string.IsNullOrWhiteSpace(searchRequest.Country))
-                query = query.Where(e => e.Country.Name == searchRequest.Country.Trim());
+            if (!string.IsNullOrWhiteSpace(searchRequest.City))
+                query = query.Where(e => e.City.Name == searchRequest.City.Trim());
 
             if (searchRequest.DateFrom.HasValue)
                 query = query.Where(e => e.Time >= searchRequest.DateFrom.Value);
@@ -157,7 +157,7 @@ namespace LiveVibe.Server.Controllers
                         : null,
                     Organizer = e.Organizer.Name,
                     Category = e.EventCategory.Name,
-                    Country = e.Country.Name,
+                    City = e.City.Name,
                     Location = e.Location,
                     Time = e.Time,
                     ImageUrl = e.ImageUrl,
@@ -233,7 +233,7 @@ namespace LiveVibe.Server.Controllers
                 return BadRequest("Event Category with this Id doesn't exist.");
             }
 
-            bool countryExists = await _context.Countries.AnyAsync(c => c.Id == request.CountryId);
+            bool countryExists = await _context.Cities.AnyAsync(c => c.Id == request.CityId);
             if (!countryExists)
             {
                 return BadRequest("Country with this Id doesn't exist.");
@@ -241,7 +241,7 @@ namespace LiveVibe.Server.Controllers
 
             bool eventExists = await _context.Events.AnyAsync(e => e.OrganizerId == request.OrganizerId
                                                     && e.CategoryId == request.CategoryId
-                                                    && e.CountryId == request.CountryId
+                                                    && e.CityId == request.CityId
                                                     && e.Location == request.Location.Trim()
                                                     && e.Time == request.Time
                                                     && e.Title == request.Title.Trim());
@@ -258,7 +258,7 @@ namespace LiveVibe.Server.Controllers
                 OrganizerId = request.OrganizerId,
                 CategoryId = request.CategoryId,
                 Location = request.Location.Trim(),
-                CountryId = request.CountryId,
+                CityId = request.CityId,
                 Time = request.Time,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
@@ -302,7 +302,7 @@ namespace LiveVibe.Server.Controllers
                 return BadRequest("Event Category with this Id doesn't exist.");
             }
 
-            bool countryExists = await _context.Countries.AnyAsync(c => c.Id == request.CountryId);
+            bool countryExists = await _context.Cities.AnyAsync(c => c.Id == request.CityId);
             if (!countryExists)
             {
                 return BadRequest("Country with this Id doesn't exist.");
@@ -310,7 +310,7 @@ namespace LiveVibe.Server.Controllers
 
             bool eventExists = await _context.Events.AnyAsync(e => e.OrganizerId == request.OrganizerId
                                                     && e.CategoryId == request.CategoryId
-                                                    && e.CountryId == request.CountryId
+                                                    && e.CityId == request.CityId
                                                     && e.Location == request.Location.Trim()
                                                     && e.Time == request.Time
                                                     && e.Title == request.Title.Trim()
@@ -325,7 +325,7 @@ namespace LiveVibe.Server.Controllers
             _event.OrganizerId = request.OrganizerId;
             _event.CategoryId = request.CategoryId;
             _event.Location = request.Location.Trim();
-            _event.CountryId = request.CountryId;
+            _event.CityId = request.CityId;
             _event.Time = request.Time;
             _event.UpdatedAt = DateTime.UtcNow;
 
@@ -441,7 +441,7 @@ namespace LiveVibe.Server.Controllers
                 .AsNoTracking()
                 .Include(e => e.Organizer)
                 .Include(e => e.EventCategory)
-                .Include(e => e.Country)
+                .Include(e => e.City)
                 .Include(e => e.EventSeatTypes)
                 .ThenInclude(st => st.Tickets)
                 .Where(e => e.Time >= now && e.Time <= nearFuture) // Only events within 30 days
