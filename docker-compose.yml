@@ -30,7 +30,7 @@ services:
       context: .
       dockerfile: ./Backend_Dockerfile
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=mssql,1433;Database=livevibe_db;User Id=sa;Password=${DB_PASSWORD:-QweAsdZxc!23};TrustServerCertificate=True;
       - Database__MaxRetryCount=10
       - Database__MaxRetryDelay=10
