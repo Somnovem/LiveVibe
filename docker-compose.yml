@@ -49,20 +49,6 @@ services:
     networks:
       - livevibe-network
 
-  frontend:
-    image: artagan/livevibe-frontend:latest
-    container_name: frontend
-    build:
-      context: .
-      dockerfile: ./Frontend_Dockerfile
-    ports:
-      - "5173:5173"
-    depends_on:
-      - backend
-    restart: always
-    networks:
-      - livevibe-network
-
 volumes:
   mssql-data:
 

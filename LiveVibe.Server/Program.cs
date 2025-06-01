@@ -111,10 +111,7 @@ internal class Program
         builder.Services.AddCors(options => {
             options.AddPolicy("DefaultPolicy",
                 builder => builder
-                    .WithOrigins(
-                        "http://localhost:5173",
-                        "http://localhost:5000"
-                    )
+                    .AllowAnyOrigin()
                     .AllowAnyMethod()
                     .AllowAnyHeader());
         });
@@ -154,7 +151,6 @@ internal class Program
         }
 
         app.UseStaticFiles();
-        app.UseDefaultFiles();
 
         app.UseCors("DefaultPolicy");
 
@@ -174,7 +170,6 @@ internal class Program
 
         app.MapControllers();
         app.MapHealthChecks("/health");
-        app.MapFallbackToFile("/index.html");
 
         app.Run();
     }
