@@ -171,12 +171,7 @@ namespace LiveVibe.Server.HelperClasses
                 {
                     new() { Id = EventCategoryIds.Concert, Name = "Концерт" },
                     new() { Id = EventCategoryIds.Festival, Name = "Фестиваль" },
-                    new() { Id = EventCategoryIds.Conference, Name = "З'їзд" },
-                    new() { Id = EventCategoryIds.Sports, Name = "Спортивний захід" },
                     new() { Id = EventCategoryIds.Theater, Name = "Вистава" },
-                    new() { Id = EventCategoryIds.Workshop, Name = "Інтерактив" },
-                    new() { Id = EventCategoryIds.Exhibition, Name = "Виставка" },
-                    new() { Id = EventCategoryIds.Standup, Name = "Стендап" },
                 };
 
             _context.EventCategories.AddRange(categories);
@@ -286,7 +281,7 @@ namespace LiveVibe.Server.HelperClasses
                         Title = "Стендап на трьох",
                         Description = "Стендап На Трьох - це івент, який обіцяє вам незабутній досвід сміху і розваг! Це місце, де досвідчені коміки зберуться, щоб перевірити свій новий матеріал зал і зарядити вас позитивною енергією.",
                         OrganizerId = OrganizerIds.GlobalStage,
-                        CategoryId = EventCategoryIds.Standup,
+                        CategoryId = EventCategoryIds.Concert,
                         Location = "Бочка Pub",
                         CityId = CityIds.Kyiv,
                         Time = now.AddMonths(3),
@@ -300,7 +295,7 @@ namespace LiveVibe.Server.HelperClasses
                         Title = "Леви на Джипі. Birthday Tour",
                         Description = "Шість років нашому проєкту і ми хочемо цю дату розділити у вашому місті разом з нашими підписниками. Коміки Микола Зирянов, Валік Міхієнко, Роман Щербан та Костя Трембовецький імпровізуватимуть з залом про загальні речі та конкретні теми, які будуть обговорюватись в окремому Телеграм-каналі кожного концерту. Частина відповідей та голосувань буде народжуватись під час розмови з вами. До зустрічі у вашому місті, святкуємо день народження разом!\r\nТакож шукайте в своїх електронних квиточках посилання на окремий Телеграм-чат концерту, воно буде біля штрих-коду.",
                         OrganizerId = OrganizerIds.UrbanPulse,
-                        CategoryId = EventCategoryIds.Standup,
+                        CategoryId = EventCategoryIds.Concert,
                         Location = "Івано-Франківський театр ім. І. Франка",
                         CityId = CityIds.Ivano_Frankivsk,
                         Time = now.AddMonths(2),
@@ -340,7 +335,7 @@ namespace LiveVibe.Server.HelperClasses
                     {
                         Id = EventIds.ShakespeareNight,
                         Title = "Віктор Павлік & Великий Симфонічний Оркестр",
-                        Description = "Віктор Павлік & Великий Симфонічний Оркестр\r\n\r\nЮвілейний концерт в Тернополі!\r\n\r\nЦього року народному артисту України Віктору Павліку виповнюється 60 років. І він відзначає свій ювілей так, як личить справжньому маестро – великим концертом у супроводі симфонічного оркестру на сцені  ПК Березіль\r\n\r\nЦе буде не просто концерт – це музична подорож крізь роки, спогади та почуття. Віктор Павлік – легенда української естради, артист, який подарував кільком поколінням слухачів щирість і справжню музику. Його голос – це емоція, це історія, це душа.",
+                        Description = "Віктор Павлік & Великий Симфонічний Оркестр. Ювілейний концерт в Тернополі! Цього року народному артисту України Віктору Павліку виповнюється 60 років. І він відзначає свій ювілей так, як личить справжньому маестро – великим концертом у супроводі симфонічного оркестру на сцені ПК Березіль. Це буде не просто концерт – це музична подорож крізь роки, спогади та почуття. Віктор Павлік – легенда української естради, артист, який подарував кільком поколінням слухачів щирість і справжню музику. Його голос – це емоція, це історія, це душа.",
                         OrganizerId = OrganizerIds.EventCo,
                         CategoryId = EventCategoryIds.Concert,
                         Location = "ПК Березіль",
