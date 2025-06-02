@@ -1,6 +1,5 @@
-﻿using LiveVibe.Server.HelperClasses.Extensions;
-using LiveVibe.Server.Models.DTOs.ModelDTOs;
-using LiveVibe.Server.Models.DTOs.Requests.EventCategories;
+﻿using LiveVibe.Server.Models.DTOs.Requests.EventCategories;
+using LiveVibe.Server.Models.DTOs.Responses;
 using LiveVibe.Server.Models.Tables;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -35,12 +34,13 @@ namespace LiveVibe.Server.Controllers
         [HttpGet("{id:guid}")]
         [SwaggerOperation(Summary = "[Admin] Get event category by ID")]
         [SwaggerResponse(200, "Event category found", typeof(EventCategory))]
-        [SwaggerResponse(404, "Event category not found")]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
+        [SwaggerResponse(404, "Event category not found", typeof(ErrorDTO))]
         public async Task<ActionResult<EventCategory>> GetEventCategoryById(Guid id)
         {
             var category = await _context.EventCategories.FindAsync(id);
             if (category == null)
-                return NotFound();
+                return NotFound(new ErrorDTO("Event category not found"));
 
             return Ok(category);
         }
@@ -50,7 +50,8 @@ namespace LiveVibe.Server.Controllers
         [SwaggerOperation(Summary = "[Admin] Create a new event category", Description = "If provided with valid data, create a new event category")]
         [SwaggerResponse(201, "Event category created successfully", typeof(EventCategory))]
         [SwaggerResponse(400, "Invalid input")]
-        [SwaggerResponse(409, "Event category with the same name already exists")]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
+        [SwaggerResponse(409, "Event category with the same name already exists", typeof(ErrorDTO))]
         public async Task<ActionResult<EventCategory>> CreateEventCategory([FromBody] CreateEventCategoryRequest request)
         {
             if (!ModelState.IsValid)
@@ -61,7 +62,7 @@ namespace LiveVibe.Server.Controllers
             bool nameExists = await _context.EventCategories.AnyAsync(u => u.Name == request.Name);
             if (nameExists)
             {
-                return Conflict("An event category with this name already exists.");
+                return Conflict(new ErrorDTO("An event category with this name already exists."));
             }
 
             var eventCategory = new EventCategory
@@ -85,7 +86,8 @@ namespace LiveVibe.Server.Controllers
         [SwaggerOperation(Summary = "[Admin] Update an existing event category", Description = "Updates existing event category.")]
         [SwaggerResponse(200, "Event category updated successfully", typeof(EventCategory))]
         [SwaggerResponse(400, "Invalid input")]
-        [SwaggerResponse(404, "Event category not found")]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
+        [SwaggerResponse(404, "Event category not found", typeof(ErrorDTO))]
         public async Task<ActionResult<EventCategory>> UpdateEventCategory([FromBody] UpdateEventCategoryRequest request)
         {
             if (!ModelState.IsValid)
@@ -93,7 +95,7 @@ namespace LiveVibe.Server.Controllers
 
             var eventCategory = await _context.EventCategories.FirstOrDefaultAsync(u => u.Id == request.Id);
             if (eventCategory == null)
-                return NotFound($"No event category found with ID {request.Id}");
+                return NotFound(new ErrorDTO($"No event category found with ID {request.Id}"));
 
             eventCategory.Name = request.Name;
 
@@ -106,9 +108,10 @@ namespace LiveVibe.Server.Controllers
         [Authorize(Roles = "Admin")]
         [HttpDelete("delete/{id:guid}")]
         [SwaggerOperation(Summary = "[Admin] Delete an event category", Description = "Deletes the event category with the specified ID.")]
-        [SwaggerResponse(200, "Event category deleted successfully")]
+        [SwaggerResponse(200, "Event category deleted successfully", typeof(SuccessDTO))]
         [SwaggerResponse(400, "Invalid input")]
-        [SwaggerResponse(404, "Event category not found")]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
+        [SwaggerResponse(404, "Event category not found", typeof(ErrorDTO))]
         public async Task<IActionResult> DeleteEventCategory(Guid id)
         {
             if (!ModelState.IsValid)
@@ -116,12 +119,12 @@ namespace LiveVibe.Server.Controllers
 
             var eventCategory = await _context.EventCategories.FirstOrDefaultAsync(u => u.Id == id);
             if (eventCategory == null)
-                return NotFound("Event category not found.");
+                return NotFound(new ErrorDTO("Event category not found."));
 
             _context.EventCategories.Remove(eventCategory);
             await _context.SaveChangesAsync();
 
-            return Ok("Event category deleted successfully.");
+            return Ok(new SuccessDTO("Event category deleted successfully."));
         }
     }
 }

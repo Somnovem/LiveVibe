@@ -1,4 +1,4 @@
-﻿namespace LiveVibe.Server.Models.DTOs.ModelDTOs
+﻿namespace LiveVibe.Server.Models.DTOs.Shared
 {
     public class PagedListDTO<T>
     {

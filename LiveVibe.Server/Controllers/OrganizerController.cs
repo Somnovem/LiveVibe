@@ -1,6 +1,7 @@
 ﻿using LiveVibe.Server.HelperClasses.Extensions;
-using LiveVibe.Server.Models.DTOs.ModelDTOs;
 using LiveVibe.Server.Models.DTOs.Requests.Organizers;
+using LiveVibe.Server.Models.DTOs.Responses;
+using LiveVibe.Server.Models.DTOs.Shared;
 using LiveVibe.Server.Models.Tables;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +26,7 @@ namespace LiveVibe.Server.Controllers
         [HttpGet("all")]
         [SwaggerOperation(Summary = "[Admin] Retrieve all organizers.", Description = "Returns a list of all organizers in the database.")]
         [SwaggerResponse(200, "Success", typeof(PagedListDTO<Organizer>))]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
         public async Task<ActionResult<PagedListDTO<Organizer>>> GetOrganizers(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)
@@ -43,12 +45,13 @@ namespace LiveVibe.Server.Controllers
         [HttpGet("{id}")]
         [SwaggerOperation(Summary = "[Admin] Get organizer by ID.")]
         [SwaggerResponse(200, "Organizer found.", typeof(Organizer))]
-        [SwaggerResponse(404, "Organizer not found.")]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
+        [SwaggerResponse(404, "Organizer not found.",typeof(ErrorDTO))]
         public async Task<ActionResult<Organizer>> GetOrganizerById(Guid id)
         {
             var organizer = await _context.Organizers.FindAsync(id);
             if (organizer == null)
-                return NotFound();
+                return NotFound(new ErrorDTO("Organizer not found."));
 
             return Ok(organizer);
         }
@@ -58,7 +61,8 @@ namespace LiveVibe.Server.Controllers
         [SwaggerOperation(Summary = "[Admin] Create a new organizer.", Description = "If provided with valid data, create a new organizer.")]
         [SwaggerResponse(201, "Organizer created successfully.", typeof(Organizer))]
         [SwaggerResponse(400, "Invalid input.")]
-        [SwaggerResponse(409, "Organizer with the same email already exists.")]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
+        [SwaggerResponse(409, "Organizer with the same email already exists.", typeof(ErrorDTO))]
         public async Task<ActionResult<Organizer>> CreateOrganizer([FromBody] CreateOrganizerRequest request)
         {
             if (!ModelState.IsValid)
@@ -69,7 +73,7 @@ namespace LiveVibe.Server.Controllers
             bool emailExists = await _context.Organizers.AnyAsync(u => u.Email == request.Email);
             if (emailExists)
             {
-                return Conflict("An organizer with this email already exists.");
+                return Conflict(new ErrorDTO("An organizer with this email already exists."));
             }
 
             var organizer = new Organizer
@@ -97,7 +101,8 @@ namespace LiveVibe.Server.Controllers
         [SwaggerOperation(Summary = "[Admin] Update an existing organizer.", Description = "Updates existing organizer details.")]
         [SwaggerResponse(200, "Organizer updated successfully.", typeof(Organizer))]
         [SwaggerResponse(400, "Invalid input.")]
-        [SwaggerResponse(404, "Organizer not found.")]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
+        [SwaggerResponse(404, "Organizer not found.", typeof(ErrorDTO))]
         public async Task<ActionResult<Organizer>> UpdateOrganizer([FromBody] UpdateOrganizerRequest request)
         {
             if (!ModelState.IsValid)
@@ -105,7 +110,7 @@ namespace LiveVibe.Server.Controllers
 
             var organizer = await _context.Organizers.FirstOrDefaultAsync(u => u.Id == request.Id);
             if (organizer == null)
-                return NotFound($"No organizer found with ID {request.Id}");
+                return NotFound(new ErrorDTO($"No organizer found with ID {request.Id}"));
 
             organizer.Name = request.Name;
             organizer.Phone = request.Phone;
@@ -121,9 +126,9 @@ namespace LiveVibe.Server.Controllers
         [Authorize(Roles = "Admin")]
         [HttpDelete("delete/{id}")]
         [SwaggerOperation(Summary = "[Admin] Delete an organizer.", Description = "Deletes the organizer with the specified ID.")]
-        [SwaggerResponse(200, "Organizer deleted successfully.")]
+        [SwaggerResponse(200, "Organizer deleted successfully.", typeof(SuccessDTO))]
         [SwaggerResponse(400, "Invalid input")]
-        [SwaggerResponse(404, "Organizer not found.")]
+        [SwaggerResponse(404, "Organizer not found.", typeof(ErrorDTO))]
         public async Task<IActionResult> DeleteOrganizer(Guid id)
         {
             if (!ModelState.IsValid)
@@ -131,12 +136,12 @@ namespace LiveVibe.Server.Controllers
 
             var organizer = await _context.Organizers.FirstOrDefaultAsync(u => u.Id == id);
             if (organizer == null)
-                return NotFound("Organizer not found.");
+                return NotFound(new ErrorDTO("Organizer not found."));
 
             _context.Organizers.Remove(organizer);
             await _context.SaveChangesAsync();
 
-            return Ok("Organizer deleted successfully.");
+            return Ok(new SuccessDTO("Organizer deleted successfully."));
         }
     }
 }

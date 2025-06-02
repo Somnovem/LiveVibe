@@ -1,4 +1,5 @@
 ﻿using LiveVibe.Server.Models.DTOs.Requests.Countries;
+using LiveVibe.Server.Models.DTOs.Responses;
 using LiveVibe.Server.Models.Tables;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -33,12 +34,13 @@ namespace LiveVibe.Server.Controllers
         [HttpGet("{id:guid}")]
         [SwaggerOperation(Summary = "[Admin] Get city by ID")]
         [SwaggerResponse(200, "City found", typeof(City))]
-        [SwaggerResponse(404, "City not found")]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
+        [SwaggerResponse(404, "City not found", typeof(ErrorDTO))]
         public async Task<ActionResult<City>> GetCityById(Guid id)
         {
             var city = await _context.Cities.FindAsync(id);
             if (city == null)
-                return NotFound();
+                return NotFound(new ErrorDTO("City not found"));
 
             return Ok(city);
         }
@@ -48,7 +50,8 @@ namespace LiveVibe.Server.Controllers
         [SwaggerOperation(Summary = "[Admin] Create a new city", Description = "If provided with valid data, create a new city.")]
         [SwaggerResponse(201, "City created successfully", typeof(City))]
         [SwaggerResponse(400, "Invalid input")]
-        [SwaggerResponse(409, "City with the same name already exists")]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
+        [SwaggerResponse(409, "City with the same name already exists", typeof(ErrorDTO))]
         public async Task<ActionResult<City>> CreateCity([FromBody] CreateCityRequest request)
         {
             if (!ModelState.IsValid)
@@ -59,7 +62,7 @@ namespace LiveVibe.Server.Controllers
             bool nameExists = await _context.Cities.AnyAsync(u => u.Name == request.Name);
             if (nameExists)
             {
-                return Conflict("A city with this name already exists.");
+                return Conflict(new ErrorDTO("A city with this name already exists."));
             }
 
             var city = new City
@@ -83,7 +86,8 @@ namespace LiveVibe.Server.Controllers
         [SwaggerOperation(Summary = "[Admin] Update an existing city", Description = "Updates existing city details.")]
         [SwaggerResponse(200, "City updated successfully", typeof(City))]
         [SwaggerResponse(400, "Invalid input")]
-        [SwaggerResponse(404, "City not found")]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
+        [SwaggerResponse(404, "City not found", typeof(ErrorDTO))]
         public async Task<ActionResult<City>> UpdateCity([FromBody] UpdateCityRequest request)
         {
             if (!ModelState.IsValid)
@@ -91,7 +95,7 @@ namespace LiveVibe.Server.Controllers
 
             var city = await _context.Cities.FirstOrDefaultAsync(u => u.Id == request.Id);
             if (city == null)
-                return NotFound($"No city found with ID {request.Id}");
+                return NotFound(new ErrorDTO($"No city found with ID {request.Id}"));
 
             city.Name = request.Name;
 
@@ -104,9 +108,10 @@ namespace LiveVibe.Server.Controllers
         [Authorize(Roles = "Admin")]
         [HttpDelete("delete/{id:guid}")]
         [SwaggerOperation(Summary = "[Admin] Delete a city", Description = "Deletes the city with the specified ID.")]
-        [SwaggerResponse(200, "City deleted successfully")]
+        [SwaggerResponse(200, "City deleted successfully", typeof(SuccessDTO))]
         [SwaggerResponse(400, "Invalid input")]
-        [SwaggerResponse(404, "City not found")]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
+        [SwaggerResponse(404, "City not found", typeof(ErrorDTO))]
         public async Task<IActionResult> DeleteCity(Guid id)
         {
             if (!ModelState.IsValid)
@@ -114,12 +119,12 @@ namespace LiveVibe.Server.Controllers
 
             var city = await _context.Cities.FirstOrDefaultAsync(u => u.Id == id);
             if (city == null)
-                return NotFound("City not found.");
+                return NotFound(new ErrorDTO("City not found."));
 
             _context.Cities.Remove(city);
             await _context.SaveChangesAsync();
 
-            return Ok("City deleted successfully.");
+            return Ok(new SuccessDTO("City deleted successfully."));
         }
     }
 }

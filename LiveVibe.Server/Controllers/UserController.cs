@@ -13,6 +13,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication;
 using LiveVibe.Server.HelperClasses;
 using LiveVibe.Server.HelperClasses.Extensions;
+using LiveVibe.Server.Models.DTOs.Shared;
+using LiveVibe.Server.Models.DTOs.Responses;
 
 namespace LiveVibe.Server.Controllers
 {
@@ -35,6 +37,7 @@ namespace LiveVibe.Server.Controllers
         [HttpGet("all")]
         [SwaggerOperation(Summary = "[Admin] Retrieve all users", Description = "Returns a list of all users in the database.")]
         [SwaggerResponse(200, "Success", typeof(PagedListDTO<User>))]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
         public async Task<ActionResult<PagedListDTO<User>>> GetUsers(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)
@@ -53,12 +56,13 @@ namespace LiveVibe.Server.Controllers
         [HttpGet("{id:guid}")]
         [SwaggerOperation(Summary = "[Admin] Get user by ID")]
         [SwaggerResponse(200, "User found", typeof(User))]
-        [SwaggerResponse(404, "User not found")]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
+        [SwaggerResponse(404, "User not found.", typeof(ErrorDTO))]
         public async Task<IActionResult> GetUserById(Guid id)
         {
             var user = await _userManager.FindByIdAsync(id.ToString());
             if (user == null)
-                return NotFound();
+                return NotFound(new ErrorDTO("User not found."));
 
             return Ok(user);
         }
@@ -66,18 +70,18 @@ namespace LiveVibe.Server.Controllers
         [HttpPost("register")]
         [SwaggerOperation(Summary = "[Any] Register a new user", Description = "Create and authenticate a new user, and issue a JWT.")]
         [SwaggerResponse(201, "User registered successfully")]
-        [SwaggerResponse(400, "Invalid input")]
-        [SwaggerResponse(409, "User with the same email or phone already exists")]
+        [SwaggerResponse(400, "Invalid input", typeof(ErrorDTO))]
+        [SwaggerResponse(409, "User with the same email or phone already exists", typeof(ErrorDTO))]
         public async Task<IActionResult> RegisterUser([FromBody] CreateUserRequest request)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
             if (await _userManager.Users.AnyAsync(u => u.Email == request.Email))
-                return Conflict("A user with this email already exists.");
+                return Conflict(new ErrorDTO("A user with this email already exists."));
 
             if (await _userManager.Users.AnyAsync(u => u.Phone == request.Phone))
-                return Conflict("A user with this phone already exists.");
+                return Conflict(new ErrorDTO("A user with this phone already exists."));
 
             var user = new User
             {
@@ -122,13 +126,13 @@ namespace LiveVibe.Server.Controllers
 
         [HttpPost("login")]
         [SwaggerOperation(Summary = "[Any] Login", Description = "Authenticate user and issue a JWT.")]
-        [SwaggerResponse(200, "Login successful, JWT returned")]
-        [SwaggerResponse(401, "Invalid email or password")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest model)
+        [SwaggerResponse(200, "Login successful, JWT returned", typeof(TokenDTO))]
+        [SwaggerResponse(401, "Invalid email or password", typeof(ErrorDTO))]
+        public async Task<ActionResult<TokenDTO>> Login([FromBody] LoginRequest model)
         {
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null || !await _userManager.CheckPasswordAsync(user, model.Password))
-                return Unauthorized("Invalid credentials");
+                return Unauthorized(new ErrorDTO("Invalid credentials"));
 
             var roles = await _userManager.GetRolesAsync(user);
 
@@ -144,32 +148,28 @@ namespace LiveVibe.Server.Controllers
 
             var token = JWTTokenGenerator.GenerateToken(_config, claims);
 
-            return Ok(new
-            {
-                token = new JwtSecurityTokenHandler().WriteToken(token),
-                token_type = "Bearer"
-            });
+            return Ok(new TokenDTO(token,"Bearer"));
         }
 
         [Authorize]
         [HttpGet("me")]
         [SwaggerOperation(Summary = "[Any authorised] Get current user", Description = "Returns the currently authenticated user's information.")]
         [SwaggerResponse(200, "Current user info returned successfully.", typeof(UserDTO))]
-        [SwaggerResponse(401, "Invalid or expired token, or user no longer exists.")]
-        public async Task<IActionResult> GetCurrentUser()
+        [SwaggerResponse(401, "Invalid or expired token, or user no longer exists.", typeof(ErrorDTO))]
+        public async Task<ActionResult<UserDTO>> GetCurrentUser()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
                 await HttpContext.SignOutAsync(JwtBearerDefaults.AuthenticationScheme);
-                return Unauthorized("Invalid credentials (user ID missing in token).");
+                return Unauthorized(new ErrorDTO("Invalid credentials (user ID missing in token)."));
             }
 
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
                 await HttpContext.SignOutAsync(JwtBearerDefaults.AuthenticationScheme);
-                return Unauthorized("Invalid credentials (user no longer exists).");
+                return Unauthorized(new ErrorDTO("Invalid credentials (user no longer exists)."));
             }
 
             return Ok(new UserDTO(user));
@@ -178,22 +178,22 @@ namespace LiveVibe.Server.Controllers
         [Authorize(Roles = "User")]
         [HttpGet("my-tickets")]
         [SwaggerOperation(Summary = "[User] Get user's tickets.", Description = "Retrieves the tickets purchased by the logged-in user.")]
-        [SwaggerResponse(200, "Tickets retrieved successfully")]
-        [SwaggerResponse(401, "Unauthorized")]
-        public async Task<IActionResult> MyTickets()
+        [SwaggerResponse(200, "Tickets retrieved successfully", typeof(List<TicketDTO>))]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as User.", typeof(ErrorDTO))]
+        public async Task<ActionResult<List<TicketDTO>>> MyTickets()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
                 await HttpContext.SignOutAsync(JwtBearerDefaults.AuthenticationScheme);
-                return Unauthorized("Invalid credentials (user ID missing in token).");
+                return Unauthorized(new ErrorDTO("Invalid credentials (user ID missing in token)."));
             }
 
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
                 await HttpContext.SignOutAsync(JwtBearerDefaults.AuthenticationScheme);
-                return Unauthorized("Invalid credentials (user no longer exists).");
+                return Unauthorized(new ErrorDTO("Invalid credentials (user no longer exists)."));
             }
 
             var ticketDTOs = await _context.TicketPurchases
@@ -219,8 +219,9 @@ namespace LiveVibe.Server.Controllers
         [SwaggerOperation(Summary = "[User,Admin] Update an existing user", Description = "Updates existing user details.")]
         [SwaggerResponse(200, "User updated successfully", typeof(UserDTO))]
         [SwaggerResponse(400, "Invalid input")]
-        [SwaggerResponse(404, "User not found")]
-        public async Task<IActionResult> UpdateUser([FromBody] UpdateUserRequest request)
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as User or Admin.")]
+        [SwaggerResponse(404, "User not found", typeof(ErrorDTO))]
+        public async Task<ActionResult<UserDTO>> UpdateUser([FromBody] UpdateUserRequest request)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -228,7 +229,7 @@ namespace LiveVibe.Server.Controllers
             var user = await _userManager.FindByIdAsync(request.Id.ToString());
 
             if (user == null)
-                return NotFound($"No user found with ID {request.Id}");
+                return NotFound(new ErrorDTO($"No user found with ID {request.Id}"));
 
             user.FirstName = request.FirstName;
             user.LastName = request.LastName;
@@ -239,7 +240,7 @@ namespace LiveVibe.Server.Controllers
             var result = await _userManager.UpdateAsync(user);
 
             if (!result.Succeeded)
-                return BadRequest("Failed to update user.");
+                return BadRequest(result.Errors);
 
             return Ok(new UserDTO(user));
         }
@@ -247,10 +248,11 @@ namespace LiveVibe.Server.Controllers
         [Authorize(Roles = "User,Admin")]
         [HttpPost("change-password")]
         [SwaggerOperation(Summary = "[User,Admin] Change a user's password", Description = "User must provide their current password to change it.")]
-        [SwaggerResponse(200, "Password changed successfully")]
-        [SwaggerResponse(400, "Validation failed")]
-        [SwaggerResponse(404, "User not found")]
-        [SwaggerResponse(403, "Current password is incorrect or new password is the same")]
+        [SwaggerResponse(200, "Password changed successfully", typeof(SuccessDTO))]
+        [SwaggerResponse(400, "Invalid input")]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as User or Admin.")]
+        [SwaggerResponse(404, "User not found", typeof(ErrorDTO))]
+        [SwaggerResponse(403, "Current password is incorrect or new password is the same", typeof(ErrorDTO))]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
             if (!ModelState.IsValid)
@@ -258,14 +260,13 @@ namespace LiveVibe.Server.Controllers
 
             var user = await _userManager.FindByIdAsync(request.Id.ToString());
             if (user == null)
-                return NotFound("User not found.");
+                return NotFound(new ErrorDTO("User not found."));
 
-
-            if (! await _userManager.CheckPasswordAsync(user, request.CurrentPassword))
-                return StatusCode(403, "Current password is incorrect.");
+            if (!await _userManager.CheckPasswordAsync(user, request.CurrentPassword))
+                return StatusCode(403, new ErrorDTO("Current password is incorrect."));
 
             if (request.CurrentPassword == request.NewPassword)
-                return StatusCode(403, "New password must be different from the current password.");
+                return StatusCode(403, new ErrorDTO("New password must be different from the current password."));
 
             await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
 
@@ -274,18 +275,18 @@ namespace LiveVibe.Server.Controllers
             var result = await _userManager.UpdateAsync(user);
 
             if (!result.Succeeded)
-                return BadRequest("Failed to update user.");
+                return BadRequest(result.Errors);
 
-            return Ok("Password changed successfully.");
+            return Ok(new SuccessDTO("Password changed successfully."));
         }
 
         [Authorize(Roles = "User")]
         [HttpDelete("delete")]
         [SwaggerOperation(Summary = "[User] Delete your account", Description = "Deletes the currently logged-in user's account.")]
-        [SwaggerResponse(200, "User deleted successfully")]
-        [SwaggerResponse(400, "Failed to delete user")]
-        [SwaggerResponse(401, "Unauthorized or invalid token")]
-        [SwaggerResponse(404, "User not found")]
+        [SwaggerResponse(200, "User deleted successfully", typeof(SuccessDTO))]
+        [SwaggerResponse(400, "Failed to delete user", typeof(ErrorDTO))]
+        [SwaggerResponse(401, "Unauthorized or invalid token", typeof(ErrorDTO))]
+        [SwaggerResponse(404, "User not found", typeof(ErrorDTO))]
         public async Task<IActionResult> DeleteUser()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -293,62 +294,70 @@ namespace LiveVibe.Server.Controllers
             if (string.IsNullOrEmpty(userId))
             {
                 await HttpContext.SignOutAsync(JwtBearerDefaults.AuthenticationScheme);
-                return Unauthorized("Invalid credentials: user ID missing from token.");
+                return Unauthorized(new ErrorDTO("Invalid credentials: user ID missing from token."));
             }
 
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
                 await HttpContext.SignOutAsync(JwtBearerDefaults.AuthenticationScheme);
-                return Unauthorized("Invalid credentials: user no longer exists.");
+                return Unauthorized(new ErrorDTO("Invalid credentials: user no longer exists."));
             }
 
             var result = await _userManager.DeleteAsync(user);
             if (!result.Succeeded)
-                return BadRequest("Failed to delete user.");
+                return BadRequest(new ErrorDTO("Failed to delete user."));
 
             await HttpContext.SignOutAsync(JwtBearerDefaults.AuthenticationScheme);
 
-            return Ok("User deleted successfully.");
+            return Ok(new SuccessDTO("User deleted successfully."));
         }
 
         [Authorize(Roles = "Admin")]
         [HttpDelete("delete/{id:guid}")]
         [SwaggerOperation(Summary = "[Admin] Delete a user", Description = "Deletes the user with the specified ID. Admin only.")]
-        [SwaggerResponse(200, "User deleted successfully")]
-        [SwaggerResponse(400, "Invalid input")]
-        [SwaggerResponse(404, "User not found")]
+        [SwaggerResponse(200, "User deleted successfully", typeof(SuccessDTO))]
+        [SwaggerResponse(400, "Failed to delete user.", typeof(ErrorDTO))]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
+        [SwaggerResponse(404, "User not found", typeof(ErrorDTO))]
         public async Task<IActionResult> DeleteUser(Guid id)
         {
             var user = await _userManager.FindByIdAsync(id.ToString());
             if (user == null)
-                return NotFound("User not found.");
+                return NotFound(new ErrorDTO("User not found."));
 
             var result = await _userManager.DeleteAsync(user);
             if (!result.Succeeded)
-                return BadRequest("Failed to delete user.");
+                return BadRequest(new ErrorDTO("Failed to delete user."));
 
-            return Ok("User deleted successfully.");
+            return Ok(new SuccessDTO("User deleted successfully."));
         }
 
         [Authorize(Roles = "SuperAdmin")]
         [HttpPost("promote-to-admin/{userId:guid}")]
         [SwaggerOperation(Summary = "[SuperAdmin] Promote a user to admin", Description = "If provided with an Id of a regular user, promotes them to admin. SuperAdmin only.")]
-        [SwaggerResponse(200, "User promoted to admin successfully.")]
-        [SwaggerResponse(400, "User is already an admin.")]
-        [SwaggerResponse(404, "User not found.")]
+        [SwaggerResponse(200, "User promoted to admin successfully.", typeof(SuccessDTO))]
+        [SwaggerResponse(400, "User is already an admin.", typeof(ErrorDTO))]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as SuperAdmin.")]
+        [SwaggerResponse(404, "User not found.", typeof(ErrorDTO))]
         public async Task<IActionResult> PromoteUserToAdmin(Guid userId)
         {
             var user = await _userManager.FindByIdAsync(userId.ToString());
             if (user == null)
-                return NotFound("User not found.");
+                return NotFound(new ErrorDTO("User not found."));
 
             var roles = await _userManager.GetRolesAsync(user);
             if (roles.Contains("Admin"))
-                return BadRequest("Already an admin.");
+                return BadRequest(new ErrorDTO("Already an admin."));
 
-            await _userManager.AddToRoleAsync(user, "User");
-            return Ok("User promoted to admin successfully.");
+            if (roles.Contains("User"))
+                await _userManager.RemoveFromRoleAsync(user, "User");
+
+            var addResult = await _userManager.AddToRoleAsync(user, "Admin");
+            if (!addResult.Succeeded)
+                return BadRequest(new ErrorDTO("Failed to assign admin role."));
+
+            return Ok(new SuccessDTO("User promoted to admin successfully."));
         }
     }
 }

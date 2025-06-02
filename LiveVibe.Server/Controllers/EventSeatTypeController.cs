@@ -1,6 +1,7 @@
 ﻿using LiveVibe.Server.HelperClasses.Extensions;
-using LiveVibe.Server.Models.DTOs.ModelDTOs;
 using LiveVibe.Server.Models.DTOs.Requests.EventSeatTypes;
+using LiveVibe.Server.Models.DTOs.Responses;
+using LiveVibe.Server.Models.DTOs.Shared;
 using LiveVibe.Server.Models.Tables;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -24,6 +25,7 @@ namespace LiveVibe.Server.Controllers
         [HttpGet("all")]
         [SwaggerOperation(Summary = "[Admin] Retrieve all event seat types.", Description = "Returns a list of all event seat types in the database.")]
         [SwaggerResponse(200, "Success", typeof(PagedListDTO<EventSeatType>))]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
         public async Task<ActionResult<PagedListDTO<EventSeatType>>> GetEventSeatTypes(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)
@@ -42,22 +44,25 @@ namespace LiveVibe.Server.Controllers
         [HttpGet("{id:guid}")]
         [SwaggerOperation(Summary = "[Admin] Get event seat type by ID.")]
         [SwaggerResponse(200, "Event seat type found.", typeof(EventSeatType))]
-        [SwaggerResponse(404, "Event seat type not found.")]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
+        [SwaggerResponse(404, "Event seat type not found.", typeof(ErrorDTO))]
         public async Task<ActionResult<EventSeatType>> GetEventSeatTypeById(Guid id)
         {
             var eventSeatType = await _context.EventSeatTypes.FindAsync(id);
             if (eventSeatType == null)
-                return NotFound("Event seat type not found.");
+                return NotFound(new ErrorDTO("Event seat type not found."));
 
             return Ok(eventSeatType);
         }
 
         [Authorize(Roles = "Admin")]
         [HttpPost("create")]
-        [SwaggerOperation(Summary = "[Admin] Create a new event seat type.", Description = "If provided with valid data, create a new event seat type and generate corresponding tickets.")]
+        [SwaggerOperation(Summary = "[Admin] Create a new event seat type.", 
+            Description = "If provided with valid data, create a new event seat type and generate corresponding tickets.")]
         [SwaggerResponse(201, "Event seat type created successfully.", typeof(EventSeatType))]
         [SwaggerResponse(400, "Invalid input.")]
-        [SwaggerResponse(409, "Same event seat type already exists")]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
+        [SwaggerResponse(409, "Same event seat type already exists", typeof(ErrorDTO))]
         public async Task<ActionResult<EventSeatType>> CreateEventSeatType([FromBody] CreateEventSeatTypeRequest request)
         {
             if (!ModelState.IsValid)
@@ -69,7 +74,7 @@ namespace LiveVibe.Server.Controllers
                                                                     && e.Name == request.Name.Trim());
             if (eventSeatTypeExists)
             {
-                return Conflict("This event seat type already exists.");
+                return Conflict(new ErrorDTO("This event seat type already exists."));
             }
 
             var eventSeatType = new EventSeatType
@@ -111,8 +116,9 @@ namespace LiveVibe.Server.Controllers
         [SwaggerOperation(Summary = "[Admin] Update an existing event seat type.", Description = "Updates existing event seat type details.")]
         [SwaggerResponse(200, "Event seat type updated successfully", typeof(EventSeatType))]
         [SwaggerResponse(400, "Invalid input")]
-        [SwaggerResponse(404, "Event seat type not found")]
-        [SwaggerResponse(409, "Same event seat type already exists")]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
+        [SwaggerResponse(404, "Event seat type not found", typeof(ErrorDTO))]
+        [SwaggerResponse(409, "Same event seat type already exists", typeof(ErrorDTO))]
         public async Task<ActionResult<EventSeatType>> UpdateEventSeatType([FromBody] UpdateEventSeatTypeRequest request)
         {
             if (!ModelState.IsValid)
@@ -120,14 +126,14 @@ namespace LiveVibe.Server.Controllers
 
             var eventSeatType = await _context.EventSeatTypes.FirstOrDefaultAsync(e => e.Id == request.Id);
             if (eventSeatType == null)
-                return NotFound($"No event seat type found with ID {request.Id}");
+                return NotFound(new ErrorDTO($"No event seat type found with ID {request.Id}"));
 
             bool eventSeatTypeExists = await _context.EventSeatTypes.AnyAsync(e => e.EventId == request.EventId
                                                                     && e.Name == request.Name.Trim()
                                                                     && e.Id != request.Id);
             if (eventSeatTypeExists)
             {
-                return Conflict("This event seat type already exists.");
+                return Conflict(new ErrorDTO("This event seat type already exists."));
             }
 
             eventSeatType.EventId = request.EventId;
@@ -145,9 +151,10 @@ namespace LiveVibe.Server.Controllers
         [Authorize(Roles = "Admin")]
         [HttpDelete("delete/{id:guid}")]
         [SwaggerOperation(Summary = "[Admin] Delete an event seat type.", Description = "Deletes the event seat type with the specified ID.")]
-        [SwaggerResponse(200, "Event seat type deleted successfully")]
+        [SwaggerResponse(200, "Event seat type deleted successfully", typeof(SuccessDTO))]
         [SwaggerResponse(400, "Invalid input")]
-        [SwaggerResponse(404, "Event seat type not found")]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
+        [SwaggerResponse(404, "Event seat type not found", typeof(ErrorDTO))]
         public async Task<IActionResult> DeleteEventSeatType(Guid id)
         {
             if (!ModelState.IsValid)
@@ -155,12 +162,12 @@ namespace LiveVibe.Server.Controllers
 
             var eventSeatType = await _context.EventSeatTypes.FirstOrDefaultAsync(e => e.Id == id);
             if (eventSeatType == null)
-                return NotFound("Event seat type not found.");
+                return NotFound(new ErrorDTO("Event seat type not found."));
 
             _context.EventSeatTypes.Remove(eventSeatType);
             await _context.SaveChangesAsync();
 
-            return Ok("Event seat type deleted successfully.");
+            return Ok(new SuccessDTO("Event seat type deleted successfully."));
         }
     }
 }

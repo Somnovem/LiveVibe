@@ -1,15 +1,11 @@
-﻿using System.Security.Claims;
-using LiveVibe.Server.Models.DTOs.Requests.Tickets;
-using LiveVibe.Server.Models.Tables;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authentication;
+﻿using LiveVibe.Server.Models.Tables;
+using LiveVibe.Server.Models.DTOs.Responses;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.Annotations;
-using LiveVibe.Server.Models.DTOs.ModelDTOs;
 using LiveVibe.Server.HelperClasses.Extensions;
+using LiveVibe.Server.Models.DTOs.Shared;
 
 namespace LiveVibe.Server.Controllers
 {
@@ -29,6 +25,7 @@ namespace LiveVibe.Server.Controllers
         [HttpGet("all")]
         [SwaggerOperation(Summary = "[Admin] Retrieve all tickets.", Description = "Returns a list of all tickets in the database.")]
         [SwaggerResponse(200, "Success", typeof(IEnumerable<Ticket>))]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
         public async Task<ActionResult<PagedListDTO<Ticket>>> GetTickets(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)
@@ -47,12 +44,13 @@ namespace LiveVibe.Server.Controllers
         [HttpGet("{id}")]
         [SwaggerOperation(Summary = "[Admin] Get Ticket by ID.")]
         [SwaggerResponse(200, "Ticket found.", typeof(Ticket))]
-        [SwaggerResponse(404, "Ticket not found.")]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
+        [SwaggerResponse(404, "Ticket not found.", typeof(ErrorDTO))]
         public async Task<ActionResult<Ticket>> GetTicketById(Guid id)
         {
             var ticket = await _context.Tickets.FindAsync(id);
             if (ticket == null)
-                return NotFound();
+                return NotFound(new ErrorDTO("Ticket not found."));
 
             return Ok(ticket);
         }

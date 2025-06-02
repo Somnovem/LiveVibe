@@ -1,4 +1,4 @@
-﻿namespace LiveVibe.Server.HelperClasses
+﻿namespace LiveVibe.Server.HelperClasses.Collections
 {
     public class PagedList<T> : List<T>
     {

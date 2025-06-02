@@ -1,4 +1,5 @@
-﻿using LiveVibe.Server.Models.DTOs.ModelDTOs;
+﻿using LiveVibe.Server.HelperClasses.Collections;
+using LiveVibe.Server.Models.DTOs.Shared;
 using Microsoft.EntityFrameworkCore;
 
 namespace LiveVibe.Server.HelperClasses.Extensions

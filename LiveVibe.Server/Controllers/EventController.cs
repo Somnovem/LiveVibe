@@ -1,12 +1,14 @@
-﻿using LiveVibe.Server.Models.DTOs.Requests.Events;
-using LiveVibe.Server.Models.Tables;
+﻿using LiveVibe.Server.Models.Tables;
+using LiveVibe.Server.Models.DTOs.ModelDTOs;
+using LiveVibe.Server.Models.DTOs.Responses;
+using LiveVibe.Server.Models.DTOs.Requests.Events;
+using LiveVibe.Server.Models.DTOs.Shared;
+using LiveVibe.Server.HelperClasses.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.Annotations;
 using SixLabors.ImageSharp;
-using LiveVibe.Server.Models.DTOs.ModelDTOs;
-using LiveVibe.Server.HelperClasses.Extensions;
 
 namespace LiveVibe.Server.Controllers
 {
@@ -43,7 +45,7 @@ namespace LiveVibe.Server.Controllers
         [HttpGet("{id:guid}")]
         [SwaggerOperation(Summary = "[Any] Get event by ID.")]
         [SwaggerResponse(200, "Event found.", typeof(EventDTO))]
-        [SwaggerResponse(404, "Event not found.")]
+        [SwaggerResponse(404, "Event not found.", typeof(ErrorDTO))]
         public async Task<ActionResult<EventDTO>> GetEventById(Guid id)
         {
             var _event = await _context.Events
@@ -54,7 +56,7 @@ namespace LiveVibe.Server.Controllers
                 .FirstOrDefaultAsync(e => e.Id == id);
 
             if (_event == null)
-                return NotFound();
+                return NotFound(new ErrorDTO("Event not found."));
 
             var result = new EventDTO
             {
@@ -164,12 +166,12 @@ namespace LiveVibe.Server.Controllers
         [HttpGet("{eventId:guid}/seat-types")]
         [SwaggerOperation(Summary = "[Any] Get seat types for a specific event", Description = "Returns the names of all seat types for a given event ID.")]
         [SwaggerResponse(200, "Seat types retrieved successfully", typeof(IEnumerable<string>))]
-        [SwaggerResponse(404, "Event not found")]
+        [SwaggerResponse(404, "Event not found", typeof(ErrorDTO))]
         public async Task<ActionResult<IEnumerable<string>>> GetSeatTypesForEvent(Guid eventId)
         {
             var eventExists = await _context.Events.AnyAsync(e => e.Id == eventId);
             if (!eventExists)
-                return NotFound("Event not found.");
+                return NotFound(new ErrorDTO("Event not found."));
 
             var seatTypeNames = await _context.EventSeatTypes
                 .Where(e => e.EventId == eventId)
@@ -182,14 +184,14 @@ namespace LiveVibe.Server.Controllers
         [HttpGet("{eventId:guid}/seat-types/{seatTypeId:guid}/available-tickets")]
         [SwaggerOperation(Summary = "[Any] Get available tickets for a specific seat type in an event")]
         [SwaggerResponse(200, "Available tickets retrieved successfully", typeof(IEnumerable<TicketDTO>))]
-        [SwaggerResponse(404, "Event or Seat Type not found")]
+        [SwaggerResponse(404, "Event or Seat Type not found", typeof(ErrorDTO))]
         public async Task<ActionResult<IEnumerable<TicketDTO>>> GetAvailableTickets(Guid eventId, Guid seatTypeId)
         {
             var seatTypeExists = await _context.EventSeatTypes.AnyAsync(s =>
                 s.EventId == eventId && s.Id == seatTypeId);
 
             if (!seatTypeExists)
-                return NotFound("Seat type not found for this event.");
+                return NotFound(new ErrorDTO("Seat type not found for this event."));
 
             var availableTickets = await _context.Tickets
                 .Where(t => t.EventId == eventId && t.SeatingCategoryId == seatTypeId)
@@ -204,8 +206,10 @@ namespace LiveVibe.Server.Controllers
         [HttpPost("create")]
         [SwaggerOperation(Summary = "[Admin] Create a new event.", Description = "If provided with valid data, create a new event.")]
         [SwaggerResponse(201, "Event created successfully.", typeof(Event))]
-        [SwaggerResponse(400, "Invalid input.")]
-        [SwaggerResponse(409, "Same event already exists")]
+        [SwaggerResponse(400, "Invalid input.", typeof(ErrorDTO))]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
+        [SwaggerResponse(404, "Organizer, Event Category or City with provided ID doesn't exist", typeof(ErrorDTO))]
+        [SwaggerResponse(409, "Same event already exists", typeof(ErrorDTO))]
         public async Task<ActionResult<Event>> CreateEvent([FromBody] CreateEventRequest request)
         {
             if (!ModelState.IsValid)
@@ -216,19 +220,19 @@ namespace LiveVibe.Server.Controllers
             bool organizerExists = await _context.Organizers.AnyAsync(o => o.Id == request.OrganizerId);
             if (!organizerExists)
             {
-                return BadRequest("Organizer with this Id doesn't exist.");
+                return NotFound(new ErrorDTO("Organizer with this Id doesn't exist."));
             }
 
-            bool categoryExists = await _context.EventCategories.AnyAsync(e => e.Id == request.CategoryId);
+            bool categoryExists = await _context.EventCategories.AnyAsync(c => c.Id == request.CategoryId);
             if (!categoryExists)
             {
-                return BadRequest("Event Category with this Id doesn't exist.");
+                return NotFound(new ErrorDTO("Event Category with this Id doesn't exist."));
             }
 
-            bool countryExists = await _context.Cities.AnyAsync(c => c.Id == request.CityId);
-            if (!countryExists)
+            bool cityExists = await _context.Cities.AnyAsync(c => c.Id == request.CityId);
+            if (!cityExists)
             {
-                return BadRequest("Country with this Id doesn't exist.");
+                return NotFound(new ErrorDTO("City with this Id doesn't exist."));
             }
 
             bool eventExists = await _context.Events.AnyAsync(e => e.OrganizerId == request.OrganizerId
@@ -239,7 +243,7 @@ namespace LiveVibe.Server.Controllers
                                                     && e.Title == request.Title.Trim());
             if (eventExists)
             {
-                return Conflict("This event already exists.");
+                return Conflict(new ErrorDTO("This event already exists."));
             }
 
             var _event = new Event
@@ -271,8 +275,9 @@ namespace LiveVibe.Server.Controllers
         [SwaggerOperation(Summary = "[Admin] Update an existing event.", Description = "Updates existing event details.")]
         [SwaggerResponse(200, "Event updated successfully", typeof(Event))]
         [SwaggerResponse(400, "Invalid input")]
-        [SwaggerResponse(404, "Event not found")]
-        [SwaggerResponse(409, "Same event already exists")]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
+        [SwaggerResponse(404, "Event not found", typeof(ErrorDTO))]
+        [SwaggerResponse(409, "Same event already exists", typeof(ErrorDTO))]
         public async Task<ActionResult<Event>> UpdateEvent([FromBody] UpdateEventRequest request)
         {
             if (!ModelState.IsValid)
@@ -280,24 +285,24 @@ namespace LiveVibe.Server.Controllers
 
             var _event = await _context.Events.FirstOrDefaultAsync(e => e.Id == request.Id);
             if (_event == null)
-                return NotFound($"No event found with ID {request.Id}");
+                return NotFound(new ErrorDTO("Event with this Id doesn't exist."));
 
             bool organizerExists = await _context.Organizers.AnyAsync(o => o.Id == request.OrganizerId);
             if (!organizerExists)
             {
-                return BadRequest("Organizer with this Id doesn't exist.");
+                return NotFound(new ErrorDTO("Organizer with this Id doesn't exist."));
             }
 
-            bool categoryExists = await _context.EventCategories.AnyAsync(e => e.Id == request.CategoryId);
+            bool categoryExists = await _context.EventCategories.AnyAsync(c => c.Id == request.CategoryId);
             if (!categoryExists)
             {
-                return BadRequest("Event Category with this Id doesn't exist.");
+                return NotFound(new ErrorDTO("Event Category with this Id doesn't exist."));
             }
 
-            bool countryExists = await _context.Cities.AnyAsync(c => c.Id == request.CityId);
-            if (!countryExists)
+            bool cityExists = await _context.Cities.AnyAsync(c => c.Id == request.CityId);
+            if (!cityExists)
             {
-                return BadRequest("Country with this Id doesn't exist.");
+                return NotFound(new ErrorDTO("City with this Id doesn't exist."));
             }
 
             bool eventExists = await _context.Events.AnyAsync(e => e.OrganizerId == request.OrganizerId
@@ -309,7 +314,7 @@ namespace LiveVibe.Server.Controllers
                                                     && e.Description == request.Description.Trim());
             if (eventExists)
             {
-                return Conflict("This event already exists.");
+                return Conflict(new ErrorDTO("This event already exists."));
             }
 
             _event.Title = request.Title.Trim();
@@ -330,9 +335,10 @@ namespace LiveVibe.Server.Controllers
         [Authorize(Roles = "Admin")]
         [HttpDelete("delete/{id:guid}")]
         [SwaggerOperation(Summary = "[Admin] Delete an event.", Description = "Deletes the event with the specified ID.")]
-        [SwaggerResponse(200, "Event deleted successfully")]
+        [SwaggerResponse(200, "Event deleted successfully", typeof(SuccessDTO))]
         [SwaggerResponse(400, "Invalid input")]
-        [SwaggerResponse(404, "Event not found")]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
+        [SwaggerResponse(404, "Event not found", typeof(ErrorDTO))]
         public async Task<IActionResult> DeleteEvent(Guid id)
         {
             if (!ModelState.IsValid)
@@ -340,12 +346,12 @@ namespace LiveVibe.Server.Controllers
 
             var _event = await _context.Events.FirstOrDefaultAsync(e => e.Id == id);
             if (_event == null)
-                return NotFound("Event not found.");
+                return NotFound(new ErrorDTO("Event not found."));
 
             _context.Events.Remove(_event);
             await _context.SaveChangesAsync();
 
-            return Ok("Event deleted successfully.");
+            return Ok(new SuccessDTO("Event deleted successfully."));
         }
 
         [Authorize(Roles = "Admin")]
@@ -355,32 +361,32 @@ namespace LiveVibe.Server.Controllers
             Description = "Allows an Admin user to upload an image file for a specific event by its ID. " +
                           "The image must be one of the supported formats (.jpg, .jpeg, .png, .gif, .webp) and up to 5MB."
         )]
-        [SwaggerResponse(StatusCodes.Status200OK, "Photo uploaded successfully.", typeof(object))]
-        [SwaggerResponse(StatusCodes.Status400BadRequest, "Invalid file or request (e.g., no file, unsupported format, file too large, invalid image).")]
-        [SwaggerResponse(StatusCodes.Status401Unauthorized, "Unauthorized: user must be authenticated as Admin.")]
-        [SwaggerResponse(StatusCodes.Status404NotFound, "Event not found.")]
+        [SwaggerResponse(200, "Photo uploaded successfully.", typeof(UploadPhotoSuccessDTO))]
+        [SwaggerResponse(400, "Invalid file or request (e.g., no file, unsupported format, file too large, invalid image).",typeof(ErrorDTO))]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
+        [SwaggerResponse(404, "Event not found.", typeof(ErrorDTO))]
         public async Task<IActionResult> UploadEventPhoto(Guid eventId, IFormFile file)
         {
             var eventItem = await _context.Events.FindAsync(eventId);
             if (eventItem == null)
-                return NotFound("Event not found.");
+                return NotFound(new ErrorDTO("Event not found."));
 
             if (file == null || file.Length == 0)
-                return BadRequest("No file uploaded.");
+                return BadRequest(new ErrorDTO("No file uploaded."));
 
             const long maxFileSize = 5 * 1024 * 1024;
             if (file.Length > maxFileSize)
-                return BadRequest("File size exceeds 5MB limit.");
+                return BadRequest(new ErrorDTO("File size exceeds 5MB limit."));
 
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
             var allowedMimeTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp" };
 
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
             if (!allowedExtensions.Contains(extension))
-                return BadRequest("Unsupported file extension.");
+                return BadRequest(new ErrorDTO("Unsupported file extension."));
 
             if (!allowedMimeTypes.Contains(file.ContentType))
-                return BadRequest("Unsupported MIME type.");
+                return BadRequest(new ErrorDTO("Unsupported MIME type."));
 
             var fileName = $"{Guid.NewGuid()}{extension}";
             fileName = Path.GetFileName(fileName);
@@ -393,11 +399,11 @@ namespace LiveVibe.Server.Controllers
             //double-check it's a valid image
             try
             {
-                using var image = SixLabors.ImageSharp.Image.Load(file.OpenReadStream());
+                using var image = Image.Load(file.OpenReadStream());
             }
             catch
             {
-                return BadRequest("Uploaded file is not a valid image.");
+                return BadRequest(new ErrorDTO("Uploaded file is not a valid image."));
             }
 
             // Delete existing image if present
@@ -416,7 +422,7 @@ namespace LiveVibe.Server.Controllers
             eventItem.ImageUrl = $"/images/events/{fileName}";
             await _context.SaveChangesAsync();
 
-            return Ok(new { imageUrl = eventItem.ImageUrl });
+            return Ok(new UploadPhotoSuccessDTO(eventItem.ImageUrl));
         }
 
         [HttpGet("featured")]
