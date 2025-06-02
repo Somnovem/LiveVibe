@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.Annotations;
+using LiveVibe.Server.HelperClasses.Extensions;
+using LiveVibe.Server.Models.DTOs.ModelDTOs;
 
 namespace LiveVibe.Server.Controllers
 {
@@ -28,8 +30,8 @@ namespace LiveVibe.Server.Controllers
         [Authorize(Roles = "Admin")]
         [HttpGet("all")]
         [SwaggerOperation(Summary = "[Admin] Retrieve all ticket purchases.", Description = "Returns a list of all ticket purchases in the database.")]
-        [SwaggerResponse(200, "Success", typeof(IEnumerable<TicketPurchase>))]
-        public async Task<IEnumerable<TicketPurchase>> GetTicketPurchasePurchases(
+        [SwaggerResponse(200, "Success", typeof(PagedListDTO<TicketPurchase>))]
+        public async Task<ActionResult<PagedListDTO<TicketPurchase>>> GetTicketPurchasePurchases(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)
         {
@@ -38,17 +40,9 @@ namespace LiveVibe.Server.Controllers
 
             var ticketPurchases = await _context.TicketPurchases
                                             .AsNoTracking()
-                                            .Skip((pageNumber - 1) * pageSize)
-                                            .Take(pageSize)
-                                            .ToListAsync();
-
-            var totalTicketPurchases = await _context.TicketPurchases.CountAsync();
-            var totalPages = (int)Math.Ceiling(totalTicketPurchases / (double)pageSize);
-
-            Response.Headers.Append("X-Total-Count", totalTicketPurchases.ToString());
-            Response.Headers.Append("X-Total-Pages", totalPages.ToString());
-
-            return ticketPurchases;
+                                            .ToPagedListAsync(pageNumber, pageSize);
+            
+            return Ok(ticketPurchases.ToDto());
         }
 
         [Authorize(Roles = "Admin")]

@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.Annotations;
 using SixLabors.ImageSharp;
 using LiveVibe.Server.Models.DTOs.ModelDTOs;
+using LiveVibe.Server.HelperClasses.Extensions;
 
 namespace LiveVibe.Server.Controllers
 {
@@ -24,8 +25,8 @@ namespace LiveVibe.Server.Controllers
 
         [HttpGet("all")]
         [SwaggerOperation(Summary = "[Any] Retrieve all events with pagination.", Description = "Returns a paged list of events.")]
-        [SwaggerResponse(200, "Success", typeof(IEnumerable<Event>))]
-        public async Task<ActionResult<IEnumerable<Event>>> GetEvents(
+        [SwaggerResponse(200, "Success", typeof(PagedListDTO<Event>))]
+        public async Task<ActionResult<PagedListDTO<Event>>> GetEvents(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)
         {
@@ -34,19 +35,10 @@ namespace LiveVibe.Server.Controllers
 
             var events = await _context.Events
                 .AsNoTracking()
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
+                .ToPagedListAsync(pageNumber, pageSize);
 
-            var totalEvents = await _context.Events.CountAsync();
-            var totalPages = (int)Math.Ceiling(totalEvents / (double)pageSize);
-
-            Response.Headers.Append("X-Total-Count", totalEvents.ToString());
-            Response.Headers.Append("X-Total-Pages", totalPages.ToString());
-
-            return Ok(events);
+            return Ok(events.ToDto());
         }
-
 
         [HttpGet("{id:guid}")]
         [SwaggerOperation(Summary = "[Any] Get event by ID.")]
@@ -89,7 +81,7 @@ namespace LiveVibe.Server.Controllers
         [HttpGet("search")]
         [SwaggerOperation(
             Summary = "[Any] Search for events with filtering and pagination.",
-            Description = "Search events based on filters like title, category, city, and date range. Supports pagination via PageNumber and PageSize."
+            Description = "Search events based on filters like title, price, category, city, and date range. Supports pagination via PageNumber and PageSize."
         )]
         [SwaggerResponse(200, "Success", typeof(IEnumerable<ShortEventDTO>))]
         [SwaggerResponse(400, "Invalid request")]

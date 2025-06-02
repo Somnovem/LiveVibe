@@ -1,4 +1,6 @@
-﻿using LiveVibe.Server.Models.DTOs.Requests.Organizers;
+﻿using LiveVibe.Server.HelperClasses.Extensions;
+using LiveVibe.Server.Models.DTOs.ModelDTOs;
+using LiveVibe.Server.Models.DTOs.Requests.Organizers;
 using LiveVibe.Server.Models.Tables;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,8 +24,8 @@ namespace LiveVibe.Server.Controllers
         [Authorize(Roles = "Admin")]
         [HttpGet("all")]
         [SwaggerOperation(Summary = "[Admin] Retrieve all organizers.", Description = "Returns a list of all organizers in the database.")]
-        [SwaggerResponse(200, "Success", typeof(IEnumerable<Organizer>))]
-        public async Task<IEnumerable<Organizer>> GetOrganizers(
+        [SwaggerResponse(200, "Success", typeof(PagedListDTO<Organizer>))]
+        public async Task<ActionResult<PagedListDTO<Organizer>>> GetOrganizers(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)
         {
@@ -32,17 +34,9 @@ namespace LiveVibe.Server.Controllers
 
             var organizers = await _context.Organizers
                                             .AsNoTracking()
-                                            .Skip((pageNumber - 1) * pageSize)
-                                            .Take(pageSize)
-                                            .ToListAsync();
+                                            .ToPagedListAsync(pageNumber, pageSize);
             
-            var totalOrganizers = await _context.Organizers.CountAsync();
-            var totalPages = (int)Math.Ceiling(totalOrganizers / (double)pageSize);
-
-            Response.Headers.Append("X-Total-Count", totalOrganizers.ToString());
-            Response.Headers.Append("X-Total-Pages", totalPages.ToString());
-
-            return organizers;
+            return Ok(organizers.ToDto());
         }
 
         [Authorize(Roles = "Admin")]

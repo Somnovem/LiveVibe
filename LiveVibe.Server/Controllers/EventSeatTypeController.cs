@@ -1,4 +1,6 @@
-﻿using LiveVibe.Server.Models.DTOs.Requests.EventSeatTypes;
+﻿using LiveVibe.Server.HelperClasses.Extensions;
+using LiveVibe.Server.Models.DTOs.ModelDTOs;
+using LiveVibe.Server.Models.DTOs.Requests.EventSeatTypes;
 using LiveVibe.Server.Models.Tables;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,8 +23,8 @@ namespace LiveVibe.Server.Controllers
         [Authorize(Roles = "Admin")]
         [HttpGet("all")]
         [SwaggerOperation(Summary = "[Admin] Retrieve all event seat types.", Description = "Returns a list of all event seat types in the database.")]
-        [SwaggerResponse(200, "Success", typeof(IEnumerable<EventSeatType>))]
-        public async Task<IEnumerable<EventSeatType>> GetEventSeatTypes(
+        [SwaggerResponse(200, "Success", typeof(PagedListDTO<EventSeatType>))]
+        public async Task<ActionResult<PagedListDTO<EventSeatType>>> GetEventSeatTypes(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)
         {
@@ -30,18 +32,10 @@ namespace LiveVibe.Server.Controllers
             if (pageSize <= 0) pageSize = 10;
 
             var seatTypes = await _context.EventSeatTypes
-                                .AsNoTracking()
-                                .Skip((pageNumber - 1) * pageSize)
-                                .Take(pageSize)
-                                .ToListAsync();
+                .AsNoTracking()
+                .ToPagedListAsync(pageNumber, pageSize);
 
-            var totalEventSeatTypes = await _context.EventSeatTypes.CountAsync();
-            var totalPages = (int)Math.Ceiling(totalEventSeatTypes / (double)pageSize);
-
-            Response.Headers.Append("X-Total-Count", totalEventSeatTypes.ToString());
-            Response.Headers.Append("X-Total-Pages", totalPages.ToString());
-
-            return seatTypes;
+            return Ok(seatTypes.ToDto());
         }
 
         [Authorize(Roles = "Admin")]

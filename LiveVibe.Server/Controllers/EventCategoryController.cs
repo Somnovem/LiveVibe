@@ -1,4 +1,6 @@
-﻿using LiveVibe.Server.Models.DTOs.Requests.EventCategories;
+﻿using LiveVibe.Server.HelperClasses.Extensions;
+using LiveVibe.Server.Models.DTOs.ModelDTOs;
+using LiveVibe.Server.Models.DTOs.Requests.EventCategories;
 using LiveVibe.Server.Models.Tables;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,24 +24,10 @@ namespace LiveVibe.Server.Controllers
         [HttpGet("all")]
         [SwaggerOperation(Summary = "[Any] Retrieve all event categories", Description = "Returns a list of all event categories in the database.")]
         [SwaggerResponse(200, "Success", typeof(IEnumerable<string>))]
-        public async Task<IEnumerable<string>> GetEventCategories(
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 10)
+        public async Task<IEnumerable<string>> GetEventCategories()
         {
-
-            if (pageNumber <= 0) pageNumber = 1;
-            if (pageSize <= 0) pageSize = 10;
-
-            var totalEventCategories = await _context.EventCategories.CountAsync();
-            var totalPages = (int)Math.Ceiling(totalEventCategories / (double)pageSize);
-
-            Response.Headers.Append("X-Total-Count", totalEventCategories.ToString());
-            Response.Headers.Append("X-Total-Pages", totalPages.ToString());
-
             return await _context.EventCategories.AsNoTracking()
                                                     .Select(e => e.Name)
-                                                    .Skip((pageNumber - 1) * pageSize)
-                                                    .Take(pageSize)
                                                     .ToListAsync();
         }
 

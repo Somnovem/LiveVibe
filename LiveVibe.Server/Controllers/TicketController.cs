@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.Annotations;
 using LiveVibe.Server.Models.DTOs.ModelDTOs;
+using LiveVibe.Server.HelperClasses.Extensions;
 
 namespace LiveVibe.Server.Controllers
 {
@@ -28,7 +29,7 @@ namespace LiveVibe.Server.Controllers
         [HttpGet("all")]
         [SwaggerOperation(Summary = "[Admin] Retrieve all tickets.", Description = "Returns a list of all tickets in the database.")]
         [SwaggerResponse(200, "Success", typeof(IEnumerable<Ticket>))]
-        public async Task<IEnumerable<Ticket>> GetTickets(
+        public async Task<ActionResult<PagedListDTO<Ticket>>> GetTickets(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)
         {
@@ -37,17 +38,9 @@ namespace LiveVibe.Server.Controllers
 
             var tickets = await _context.Tickets
                                             .AsNoTracking()
-                                            .Skip((pageNumber - 1) * pageSize)
-                                            .Take(pageSize)
-                                            .ToListAsync();
+                                            .ToPagedListAsync(pageNumber, pageSize);
 
-            var totalTickets = await _context.Tickets.CountAsync();
-            var totalPages = (int)Math.Ceiling(totalTickets / (double)pageSize);
-
-            Response.Headers.Append("X-Total-Count", totalTickets.ToString());
-            Response.Headers.Append("X-Total-Pages", totalPages.ToString());
-
-            return tickets;
+            return Ok(tickets.ToDto());
         }
 
         [Authorize(Roles = "Admin")]

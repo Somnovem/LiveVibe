@@ -22,24 +22,10 @@ namespace LiveVibe.Server.Controllers
         [HttpGet("all")]
         [SwaggerOperation(Summary = "[Any] Retrieve all cities", Description = "Returns a list of all cities in the database.")]
         [SwaggerResponse(200, "Success", typeof(IEnumerable<string>))]
-        public async Task<IEnumerable<string>> GetCities(
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 10)
-        {
-
-            if (pageNumber <= 0) pageNumber = 1;
-            if (pageSize <= 0) pageSize = 10;
-
-            var totalCities = await _context.Cities.CountAsync();
-            var totalPages = (int)Math.Ceiling(totalCities / (double)pageSize);
-
-            Response.Headers.Append("X-Total-Count", totalCities.ToString());
-            Response.Headers.Append("X-Total-Pages", totalPages.ToString());
-
+        public async Task<IEnumerable<string>> GetCities()
+        { 
             return await _context.Cities.AsNoTracking()
                                               .Select(e => e.Name)
-                                              .Skip((pageNumber - 1) * pageSize)
-                                              .Take(pageSize)
                                               .ToListAsync();
         }
 

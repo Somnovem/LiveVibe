@@ -20,6 +20,9 @@ node_modules/
 *.userosscache
 *.sln.docstates
 
+# IDE - IntelliJ
+.idea/
+
 # Docker
 .docker/
 

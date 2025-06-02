@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication;
 using LiveVibe.Server.HelperClasses;
+using LiveVibe.Server.HelperClasses.Extensions;
 
 namespace LiveVibe.Server.Controllers
 {
@@ -33,8 +34,8 @@ namespace LiveVibe.Server.Controllers
         [Authorize(Roles = "Admin")]
         [HttpGet("all")]
         [SwaggerOperation(Summary = "[Admin] Retrieve all users", Description = "Returns a list of all users in the database.")]
-        [SwaggerResponse(200, "Success", typeof(IEnumerable<UserDTO>))]
-        public async Task<ActionResult<IEnumerable<UserDTO>>> GetUsers(
+        [SwaggerResponse(200, "Success", typeof(PagedListDTO<User>))]
+        public async Task<ActionResult<PagedListDTO<User>>> GetUsers(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)
         {
@@ -43,18 +44,9 @@ namespace LiveVibe.Server.Controllers
 
             var users = await _userManager.Users
                 .AsNoTracking()
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .Select(u => new UserDTO(u))
-                .ToListAsync();
+                .ToPagedListAsync(pageNumber, pageSize);
 
-            var totalUsers = await _context.Users.CountAsync();
-            var totalPages = (int)Math.Ceiling(totalUsers / (double)pageSize);
-
-            Response.Headers.Append("X-Total-Count", totalUsers.ToString());
-            Response.Headers.Append("X-Total-Pages", totalPages.ToString());
-
-            return Ok(users);
+            return Ok(users.ToDto());
         }
 
         [Authorize(Roles = "Admin")]
