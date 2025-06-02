@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.Annotations;
 using SixLabors.ImageSharp;
+using LiveVibe.Server.HelperClasses.Collections;
 
 namespace LiveVibe.Server.Controllers
 {
@@ -85,9 +86,9 @@ namespace LiveVibe.Server.Controllers
             Summary = "[Any] Search for events with filtering and pagination.",
             Description = "Search events based on filters like title, price, category, city, and date range. Supports pagination via PageNumber and PageSize."
         )]
-        [SwaggerResponse(200, "Success", typeof(IEnumerable<ShortEventDTO>))]
+        [SwaggerResponse(200, "Success", typeof(PagedListDTO<ShortEventDTO>))]
         [SwaggerResponse(400, "Invalid request")]
-        public async Task<ActionResult<IEnumerable<ShortEventDTO>>> Search([FromQuery] EventSearchRequest searchRequest)
+        public async Task<ActionResult<PagedListDTO<ShortEventDTO>>> Search([FromQuery] EventSearchRequest searchRequest)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -125,16 +126,11 @@ namespace LiveVibe.Server.Controllers
                 );
             }
 
-            var skip = (searchRequest.PageNumber - 1) * searchRequest.PageSize;
-            var take = searchRequest.PageSize;
-
             var rawResults = await query 
                                     .OrderBy(e => e.Time)
-                                    .Skip(skip)
-                                    .Take(take)
-                                    .ToListAsync();
+                                    .ToPagedListAsync(searchRequest.PageNumber, searchRequest.PageSize);
 
-            var results = rawResults.Select(e =>
+            var mappedResults = rawResults.Select(e =>
             {
                 var matchedCategory = e.EventSeatTypes
                     .FirstOrDefault(sc =>
@@ -160,7 +156,14 @@ namespace LiveVibe.Server.Controllers
                 };
             }).ToList();
 
-            return Ok(results);
+            var pagedMapped = new PagedList<ShortEventDTO>(
+                mappedResults,
+                rawResults.TotalCount,
+                rawResults.Page,
+                rawResults.PageSize
+            );
+
+            return Ok(pagedMapped.ToDto());
         }
 
         [HttpGet("{eventId:guid}/seat-types")]
