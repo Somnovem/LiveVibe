@@ -31,6 +31,16 @@ namespace LiveVibe.Server.Controllers
         }
 
         [Authorize(Roles = "Admin")]
+        [HttpGet("all/full")]
+        [SwaggerOperation(Summary = "[Admin] Retrieve all event categories with IDs", Description = "Returns a list of all event categories in the database.")]
+        [SwaggerResponse(200, "Success", typeof(IEnumerable<EventCategory>))]
+        public async Task<IEnumerable<EventCategory>> GetEventCategoriesFull()
+        {
+            return await _context.EventCategories.AsNoTracking()
+                                                    .ToListAsync();
+        }
+
+        [Authorize(Roles = "Admin")]
         [HttpGet("{id:guid}")]
         [SwaggerOperation(Summary = "[Admin] Get event category by ID")]
         [SwaggerResponse(200, "Event category found", typeof(EventCategory))]

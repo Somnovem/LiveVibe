@@ -31,6 +31,16 @@ namespace LiveVibe.Server.Controllers
         }
 
         [Authorize(Roles = "Admin")]
+        [HttpGet("all/full")]
+        [SwaggerOperation(Summary = "[Admin] Retrieve all cities with IDs", Description = "Returns a list of all cities in the database.")]
+        [SwaggerResponse(200, "Success", typeof(IEnumerable<City>))]
+        public async Task<IEnumerable<City>> GetCitiesFull()
+        {
+            return await _context.Cities.AsNoTracking()
+                                              .ToListAsync();
+        }
+
+        [Authorize(Roles = "Admin")]
         [HttpGet("{id:guid}")]
         [SwaggerOperation(Summary = "[Admin] Get city by ID")]
         [SwaggerResponse(200, "City found", typeof(City))]

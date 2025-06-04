@@ -347,7 +347,7 @@ public class EventControllerTests : TestBase
 
         // Assert
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var events = okResult.Value.Should().BeAssignableTo<List<ShortEventDTO>>().Subject;
+        var events = okResult.Value.Should().BeAssignableTo<List<SearchedEventDTO>>().Subject;
         events.Should().HaveCount(expectedCount);
 
         if (expectedCount > 0)
@@ -412,7 +412,7 @@ public class EventControllerTests : TestBase
 
         // Assert
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var searchResults = okResult.Value.Should().BeAssignableTo<List<ShortEventDTO>>().Subject;
+        var searchResults = okResult.Value.Should().BeAssignableTo<List<SearchedEventDTO>>().Subject;
         
         if (pageNumber == 3)  // Last page should have fewer items
         {

@@ -28,8 +28,8 @@ namespace LiveVibe.Server.Controllers
 
         [HttpGet("all")]
         [SwaggerOperation(Summary = "[Any] Retrieve all events with pagination.", Description = "Returns a paged list of events.")]
-        [SwaggerResponse(200, "Success", typeof(PagedListDTO<Event>))]
-        public async Task<ActionResult<PagedListDTO<Event>>> GetEvents(
+        [SwaggerResponse(200, "Success", typeof(PagedListDTO<EventDTO>))]
+        public async Task<ActionResult<PagedListDTO<EventDTO>>> GetEvents(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)
         {
@@ -38,9 +38,42 @@ namespace LiveVibe.Server.Controllers
 
             var events = await _context.Events
                 .AsNoTracking()
+                .Include(e => e.Organizer)
+                .Include(e => e.EventCategory)
+                .Include(e => e.City)
+                .Include(e => e.EventSeatTypes)
                 .ToPagedListAsync(pageNumber, pageSize);
 
-            return Ok(events.ToDto());
+            var eventDtos = events.Select(e => new EventDTO
+            {
+                Id = e.Id,
+                Title = e.Title,
+                Description = e.Description,
+                Organizer = e.Organizer.Name,
+                Category = e.EventCategory.Name,
+                City = e.City.Name,
+                Location = e.Location,
+                Time = e.Time,
+                ImageUrl = e.ImageUrl,
+                CreatedAt = e.CreatedAt,
+                UpdatedAt = e.UpdatedAt,
+                SeatTypes = e.EventSeatTypes
+                    .Select(sc => new ShortSeatTypeDTO(sc))
+                    .ToList()
+            }).ToList();
+
+            var result = new PagedListDTO<EventDTO>
+            {
+                Items = eventDtos,
+                Page = events.Page,
+                TotalPages = events.TotalPages,
+                PageSize = events.PageSize,
+                TotalCount = events.TotalCount,
+                HasPrevious = events.HasPrevious,
+                HasNext = events.HasNext
+            };
+
+            return Ok(result);
         }
 
         [HttpGet("{id:guid}")]
@@ -86,9 +119,9 @@ namespace LiveVibe.Server.Controllers
             Summary = "[Any] Search for events with filtering and pagination.",
             Description = "Search events based on filters like title, price, category, city, and date range. Supports pagination via PageNumber and PageSize."
         )]
-        [SwaggerResponse(200, "Success", typeof(PagedListDTO<ShortEventDTO>))]
+        [SwaggerResponse(200, "Success", typeof(PagedListDTO<SearchedEventDTO>))]
         [SwaggerResponse(400, "Invalid request")]
-        public async Task<ActionResult<PagedListDTO<ShortEventDTO>>> Search([FromQuery] EventSearchRequest searchRequest)
+        public async Task<ActionResult<PagedListDTO<SearchedEventDTO>>> Search([FromQuery] EventSearchRequest searchRequest)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -138,7 +171,7 @@ namespace LiveVibe.Server.Controllers
                         (!searchRequest.MaxPrice.HasValue || (decimal)sc.Price <= searchRequest.MaxPrice.Value)
                     );
 
-                return new ShortEventDTO
+                return new SearchedEventDTO
                 {
                     Id = e.Id,
                     Title = e.Title,
@@ -156,7 +189,7 @@ namespace LiveVibe.Server.Controllers
                 };
             }).ToList();
 
-            var pagedMapped = new PagedList<ShortEventDTO>(
+            var pagedMapped = new PagedList<SearchedEventDTO>(
                 mappedResults,
                 rawResults.TotalCount,
                 rawResults.Page,
@@ -186,9 +219,9 @@ namespace LiveVibe.Server.Controllers
 
         [HttpGet("{eventId:guid}/seat-types/{seatTypeId:guid}/available-tickets")]
         [SwaggerOperation(Summary = "[Any] Get available tickets for a specific seat type in an event")]
-        [SwaggerResponse(200, "Available tickets retrieved successfully", typeof(IEnumerable<TicketDTO>))]
+        [SwaggerResponse(200, "Available tickets retrieved successfully", typeof(IEnumerable<ShortTicketDTO>))]
         [SwaggerResponse(404, "Event or Seat Type not found", typeof(ErrorDTO))]
-        public async Task<ActionResult<IEnumerable<TicketDTO>>> GetAvailableTickets(Guid eventId, Guid seatTypeId)
+        public async Task<ActionResult<IEnumerable<ShortTicketDTO>>> GetAvailableTickets(Guid eventId, Guid seatTypeId)
         {
             var seatTypeExists = await _context.EventSeatTypes.AnyAsync(s =>
                 s.EventId == eventId && s.Id == seatTypeId);

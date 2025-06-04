@@ -199,11 +199,23 @@ namespace LiveVibe.Server.Controllers
             var ticketDTOs = await _context.TicketPurchases
                 .Where(tp => tp.UserId == user.Id)
                 .Include(tp => tp.Ticket)
+                .Include(tp => tp.Ticket.Event)
+                .Include(tp => tp.Ticket.Event.EventCategory)
                 .Include(tp => tp.Ticket.SeatingCategory)
                 .Select(tp => new TicketDTO
                 {
                     Id = tp.Ticket.Id,
-                    EventId = tp.Ticket.EventId,
+                    Event = new Models.DTOs.Models.ShortEventDTO
+                    {
+                        Id = tp.Ticket.EventId,
+                        Title = tp.Ticket.Event.Title,
+                            Description = !string.IsNullOrEmpty(tp.Ticket.Event.Description)
+                            ? (tp.Ticket.Event.Description.Length > 50 ? tp.Ticket.Event.Description.Substring(0, 50) + "..." : tp.Ticket.Event.Description)
+                            : null,
+                        Category = tp.Ticket.Event.EventCategory.Name,
+                        Time = tp.Ticket.Event.Time,
+                        ImageUrl = tp.Ticket.Event.ImageUrl,
+                    },
                     SeatingCategoryType = tp.Ticket.SeatingCategory.Name,
                     Seat = tp.Ticket.Seat,
                     Price = tp.PurchasePrice,

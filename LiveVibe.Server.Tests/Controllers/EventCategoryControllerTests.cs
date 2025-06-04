@@ -30,35 +30,6 @@ public class EventCategoryControllerTests : TestBase
     {
         // Arrange
         var context = CreateTestDbContext();
-        var category1 = await SetupTestCategory(context);
-        var category2 = await SetupTestCategory(context);
-        
-        var controller = new EventCategoryController(context);
-        controller.ControllerContext = new ControllerContext
-        {
-            HttpContext = new DefaultHttpContext()
-        };
-
-        // Act
-        var result = await controller.GetEventCategories();
-
-        // Assert
-        var categories = result.Should().BeAssignableTo<IEnumerable<string>>().Subject;
-        categories.Should().HaveCount(2);
-        categories.Should().Contain(category1.Name);
-        categories.Should().Contain(category2.Name);
-        
-        controller.Response.Headers.Should().ContainKey("X-Total-Count");
-        controller.Response.Headers.Should().ContainKey("X-Total-Pages");
-        controller.Response.Headers["X-Total-Count"].ToString().Should().Be("2");
-        controller.Response.Headers["X-Total-Pages"].ToString().Should().Be("1");
-    }
-
-    [Fact]
-    public async Task GetEventCategories_WithPagination_ReturnsCorrectPage()
-    {
-        // Arrange
-        var context = CreateTestDbContext();
         var categories = new List<EventCategory>();
         
         // Create 15 categories
@@ -74,15 +45,16 @@ public class EventCategoryControllerTests : TestBase
             HttpContext = new DefaultHttpContext()
         };
 
-        // Act - Get second page with 5 items per page
-        var result = await controller.GetEventCategories(pageNumber: 2, pageSize: 5);
+        // Act
+        var result = await controller.GetEventCategories();
 
         // Assert
         var returnedCategories = result.Should().BeAssignableTo<IEnumerable<string>>().Subject;
-        returnedCategories.Should().HaveCount(5);
-        
-        controller.Response.Headers["X-Total-Count"].ToString().Should().Be("15");
-        controller.Response.Headers["X-Total-Pages"].ToString().Should().Be("3");
+        returnedCategories.Should().HaveCount(15);
+        foreach (var category in categories)
+        {
+            returnedCategories.Should().Contain(category.Name);
+        }
     }
 
     [Fact]

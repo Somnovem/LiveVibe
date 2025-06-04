@@ -10,6 +10,7 @@ using Swashbuckle.AspNetCore.Annotations;
 using LiveVibe.Server.HelperClasses.Extensions;
 using LiveVibe.Server.Models.DTOs.Shared;
 using LiveVibe.Server.Models.DTOs.Responses;
+using LiveVibe.Server.Models.DTOs.Requests.TicketPurchases;
 
 namespace LiveVibe.Server.Controllers
 {
@@ -71,7 +72,7 @@ namespace LiveVibe.Server.Controllers
         [SwaggerResponse(400, "Bad request (e.g., event already happened, ticket already purchased, no seats available).", typeof(ErrorDTO))]
         [SwaggerResponse(401, "Unauthorized: invalid or missing user credentials.", typeof(ErrorDTO))]
         [SwaggerResponse(404, "Ticket not found.", typeof(ErrorDTO))]
-        public async Task<IActionResult> PurchaseTicket([FromBody] Guid ticketId)
+        public async Task<IActionResult> PurchaseTicket([FromBody] PurchaseTicketRequest request)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
@@ -83,7 +84,7 @@ namespace LiveVibe.Server.Controllers
             var ticket = await _context.Tickets
                 .Include(t => t.SeatingCategory)
                 .Include(t => t.SeatingCategory.Event)
-                .FirstOrDefaultAsync(t => t.Id == ticketId);
+                .FirstOrDefaultAsync(t => t.Id == request.TicketId);
 
             if (ticket == null)
                 return NotFound(new ErrorDTO("Ticket not found."));
@@ -91,7 +92,7 @@ namespace LiveVibe.Server.Controllers
             if (ticket.SeatingCategory.Event.Time <= DateTime.UtcNow)
                 return BadRequest(new ErrorDTO("Event already happened."));
 
-            if (await _context.TicketPurchases.AnyAsync(t => t.TicketId == ticketId && !t.WasRefunded))
+            if (await _context.TicketPurchases.AnyAsync(t => t.TicketId == request.TicketId && !t.WasRefunded))
                 return BadRequest(new ErrorDTO("Ticket already purchased."));
 
             var seatType = ticket.SeatingCategory;
