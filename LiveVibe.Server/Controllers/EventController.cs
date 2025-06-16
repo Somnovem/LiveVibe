@@ -217,27 +217,6 @@ namespace LiveVibe.Server.Controllers
             return Ok(seatTypeNames);
         }
 
-        [HttpGet("{eventId:guid}/seat-types/{seatTypeId:guid}/available-tickets")]
-        [SwaggerOperation(Summary = "[Any] Get available tickets for a specific seat type in an event")]
-        [SwaggerResponse(200, "Available tickets retrieved successfully", typeof(IEnumerable<ShortTicketDTO>))]
-        [SwaggerResponse(404, "Event or Seat Type not found", typeof(ErrorDTO))]
-        public async Task<ActionResult<IEnumerable<ShortTicketDTO>>> GetAvailableTickets(Guid eventId, Guid seatTypeId)
-        {
-            var seatTypeExists = await _context.EventSeatTypes.AnyAsync(s =>
-                s.EventId == eventId && s.Id == seatTypeId);
-
-            if (!seatTypeExists)
-                return NotFound(new ErrorDTO("Seat type not found for this event."));
-
-            var availableTickets = await _context.Tickets
-                .Where(t => t.EventId == eventId && t.SeatingCategoryId == seatTypeId)
-                .Where(t => !_context.TicketPurchases.Any(p => p.TicketId == t.Id && !p.WasRefunded))
-                .Select(t => new ShortTicketDTO(t))
-                .ToListAsync();
-
-            return Ok(availableTickets);
-        }
-
         [Authorize(Roles = "Admin")]
         [HttpPost("create")]
         [SwaggerOperation(Summary = "[Admin] Create a new event.", Description = "If provided with valid data, create a new event.")]
@@ -463,10 +442,10 @@ namespace LiveVibe.Server.Controllers
 
         [HttpGet("featured")]
         [SwaggerOperation(Summary = "[Any] Get featured events for the main page.", 
-            Description = "Returns a curated list of upcoming events based on time proximity, ticket availability, and category diversity.")]
+           Description = "Returns a curated list of upcoming events based on time proximity, ticket availability, and category diversity.")]
         [SwaggerResponse(200, "Success", typeof(IEnumerable<FeaturedEventDTO>))]
         public async Task<ActionResult<IEnumerable<FeaturedEventDTO>>> GetFeaturedEvents(
-            [FromQuery] int maxEvents = 6)
+           [FromQuery] int maxEvents = 6)
         {
             var now = DateTime.UtcNow;
             var nearFuture = now.AddDays(30);
@@ -477,22 +456,19 @@ namespace LiveVibe.Server.Controllers
                 .Include(e => e.EventCategory)
                 .Include(e => e.City)
                 .Include(e => e.EventSeatTypes)
-                .ThenInclude(st => st.Tickets)
-                .Where(e => e.Time >= now && e.Time <= nearFuture) // Only events within 30 days
-                .Where(e => e.EventSeatTypes.Any(st => 
-                    st.Tickets.Any(t => !_context.TicketPurchases
-                        .Any(tp => tp.TicketId == t.Id && !tp.WasRefunded)))) // Has available tickets
+                .Where(e => e.Time >= now && e.Time <= nearFuture)
+                .Where(e => e.EventSeatTypes.Any(st => st.AvailableSeats > 0))
                 .ToListAsync();
 
-            var eventsByCategory = upcomingEvents // Group by category to ensure diversity
+            var eventsByCategory = upcomingEvents
                 .GroupBy(e => e.EventCategory.Name)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
             var featuredEvents = new List<Event>();
             var categories = eventsByCategory.Keys.ToList();
             var categoryIndex = 0;
-            
-            while (featuredEvents.Count < maxEvents && categories.Any()) // Ensure we get events from different categories in rotation
+
+            while (featuredEvents.Count < maxEvents && categories.Any())
             {
                 var currentCategory = categories[categoryIndex % categories.Count];
                 var categoryEvents = eventsByCategory[currentCategory];
@@ -518,9 +494,7 @@ namespace LiveVibe.Server.Controllers
                 categoryIndex++;
             }
 
-            var result = featuredEvents.Select(e => new FeaturedEventDTO(e)).ToList();
-
-            return Ok(result);
+            return Ok(featuredEvents.Select(e => new FeaturedEventDTO(e)));
         }
     }
 }

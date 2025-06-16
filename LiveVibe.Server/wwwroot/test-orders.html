@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LiveVibe - Test Orders Page</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .order-card {
+            border-left: 4px solid #007bff;
+        }
+        .ticket-card {
+            border-left: 4px solid #28a745;
+            margin-left: 20px;
+        }
+        .login-section {
+            margin-bottom: 30px;
+        }
+        .orders-section {
+            display: none;
+        }
+        .error-message {
+            color: #dc3545;
+            margin-top: 10px;
+        }
+        .success-message {
+            color: #28a745;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">LiveVibe Orders Test Page</h1>
+        
+        <!-- Login Section -->
+        <div class="login-section card p-4">
+            <h2>Login</h2>
+            <form id="loginForm">
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+            <div id="loginMessage"></div>
+        </div>
+
+        <!-- Orders Section -->
+        <div class="orders-section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>My Orders</h2>
+                <button id="refreshOrders" class="btn btn-outline-primary">Refresh Orders</button>
+            </div>
+            <div id="ordersList"></div>
+        </div>
+    </div>
+
+    <script>
+        let token = '';
+
+        // Login form submission
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const loginMessage = document.getElementById('loginMessage');
+
+            try {
+                const response = await fetch('/api/users/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    token = data.token;
+                    loginMessage.innerHTML = '<div class="success-message">Login successful!</div>';
+                    document.querySelector('.login-section').style.display = 'none';
+                    document.querySelector('.orders-section').style.display = 'block';
+                    loadOrders();
+                } else {
+                    loginMessage.innerHTML = `<div class="error-message">${data.message || 'Login failed'}</div>`;
+                }
+            } catch (error) {
+                loginMessage.innerHTML = '<div class="error-message">An error occurred during login</div>';
+            }
+        });
+
+        // Load orders
+        async function loadOrders() {
+            const ordersList = document.getElementById('ordersList');
+            
+            try {
+                const response = await fetch('/api/users/my-orders', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const orders = await response.json();
+                
+                if (response.ok) {
+
+                    console.log(orders);
+
+                    if (orders.length === 0) {
+                        ordersList.innerHTML = '<div class="alert alert-info">No orders found</div>';
+                        return;
+                    }
+
+                    ordersList.innerHTML = orders.map(order => `
+                        <div class="card order-card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">Order #${order.id}</h5>
+                                <p class="card-text">
+                                    <strong>Status:</strong> ${order.status}<br>
+                                    <strong>Created:</strong> ${new Date(order.createdAt).toLocaleString()}<br>
+                                    <strong>Customer:</strong> ${order.firstname} ${order.lastname}<br>
+                                    <strong>Email:</strong> ${order.email}
+                                </p>
+                                <div class="tickets-section">
+                                    <h6>Tickets:</h6>
+                                    ${order.tickets.map(ticket => `
+                                        <div class="card ticket-card mb-2">
+                                            <div class="card-body">
+                                                <p class="card-text">
+                                                    <strong>Event ID:</strong> ${ticket.eventId}<br>
+                                                    <strong>Seat Type ID:</strong> ${ticket.seatTypeId}<br>
+                                                    <strong>Created:</strong> ${new Date(ticket.createdAt).toLocaleString()}
+                                                </p>
+                                                ${ticket.qrCodeUrl ? `<div class="qr-code">${ticket.qrCodeUrl}</div>` : ''}
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    ordersList.innerHTML = '<div class="alert alert-danger">Failed to load orders</div>';
+                }
+            } catch (error) {
+                ordersList.innerHTML = '<div class="alert alert-danger">An error occurred while loading orders</div>';
+            }
+        }
+
+        // Refresh orders button
+        document.getElementById('refreshOrders').addEventListener('click', loadOrders);
+    </script>
+</body>
+</html> 

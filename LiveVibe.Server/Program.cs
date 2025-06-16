@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text;
 using LiveVibe.Server.HelperClasses;
 using LiveVibe.Server.Models.Tables;
+using LiveVibe.Server.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -66,7 +67,11 @@ internal class Program
         // 4. Authorization
         builder.Services.AddAuthorization();
 
-        // 5. Controllers and Swagger
+        // 5. Register custom services
+        builder.Services.AddScoped<IQRCodeService, QRCodeService>();
+        builder.Services.AddScoped<IEmailService, EmailService>();
+
+        // 6. Controllers and Swagger
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen(c =>
@@ -118,12 +123,12 @@ internal class Program
 
         builder.Services.AddHealthChecks();
 
-        // 6. Configure the port explicitly
+        // 7. Configure the port explicitly
         builder.WebHost.UseUrls("http://0.0.0.0:5000");
 
         var app = builder.Build();
 
-        // 7. Fully setup the db
+        // 8. Fully setup the db
         using (var scope = app.Services.CreateScope())
         {
             var services = scope.ServiceProvider;
@@ -143,7 +148,7 @@ internal class Program
             await SeedData.InitializeAsync(services);
         }
 
-        // 8. Middleware pipeline
+        // 9. Middleware pipeline
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger(options => options.SerializeAsV2 = true);

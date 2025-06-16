@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.Annotations;
 using LiveVibe.Server.HelperClasses.Extensions;
 using LiveVibe.Server.Models.DTOs.Shared;
+using LiveVibe.Server.Services;
 
 namespace LiveVibe.Server.Controllers
 {
@@ -15,10 +16,12 @@ namespace LiveVibe.Server.Controllers
     {
 
         private readonly ApplicationContext _context;
+        private readonly IQRCodeService _qrCodeService;
 
-        public TicketController(ApplicationContext db)
+        public TicketController(ApplicationContext db, IQRCodeService qrCodeService)
         {
             _context = db;
+            _qrCodeService = qrCodeService;
         }
 
         [Authorize(Roles = "Admin")]
@@ -40,9 +43,8 @@ namespace LiveVibe.Server.Controllers
             return Ok(tickets.ToDto());
         }
 
-        [Authorize(Roles = "Admin")]
         [HttpGet("{id}")]
-        [SwaggerOperation(Summary = "[Admin] Get Ticket by ID.")]
+        [SwaggerOperation(Summary = "[Any] Get Ticket by ID.")]
         [SwaggerResponse(200, "Ticket found.", typeof(Ticket))]
         [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
         [SwaggerResponse(404, "Ticket not found.", typeof(ErrorDTO))]
@@ -53,6 +55,31 @@ namespace LiveVibe.Server.Controllers
                 return NotFound(new ErrorDTO("Ticket not found."));
 
             return Ok(ticket);
+        }
+
+        [HttpGet("{id}/qrcode")]
+        [SwaggerOperation(Summary = "Get QR code for a ticket.")]
+        [SwaggerResponse(200, "QR code found.", typeof(string))]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated.")]
+        [SwaggerResponse(404, "Ticket not found.", typeof(ErrorDTO))]
+        public async Task<ActionResult<string>> GetTicketQRCode(Guid id)
+        {
+            var ticket = await _context.Tickets.FindAsync(id);
+            if (ticket == null)
+                return NotFound(new ErrorDTO("Ticket not found."));
+
+            // The QR code for this ticket has not been generated yet.
+            if (string.IsNullOrEmpty(ticket.QRCodeUrl))
+            {
+                var ticketUrl = $"http://localhost:5000/api/tickets/{id}";
+
+                var qrCodeSvg = _qrCodeService.GenerateQRCodeSvg(ticketUrl);
+
+                ticket.QRCodeUrl = qrCodeSvg;
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(ticket.QRCodeUrl);
         }
     }
 }

@@ -31,6 +31,6 @@ namespace LiveVibe.Server.Models.Tables
         [Column(TypeName = "datetime2")]
         public DateTime UpdatedAt { get; set; }
 
-        public virtual ICollection<TicketPurchase> TicketPurchases { get; set; } = new List<TicketPurchase>();
+        public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
     }
 }

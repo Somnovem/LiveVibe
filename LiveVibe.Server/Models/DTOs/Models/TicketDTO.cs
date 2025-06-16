@@ -4,12 +4,13 @@ namespace LiveVibe.Server.Models.DTOs.ModelDTOs
 {
     public class TicketDTO
     {
-        public Guid Id { get; set; }
-        public required ShortEventDTO Event { get; set; }
-        public string SeatingCategoryType { get; set; } = string.Empty;
-        public string Seat { get; set; } = string.Empty;
-        public decimal Price { get; set; }
-        public bool WasRefunded { get; set; }
+        public required Guid Id { get; set; }
+        public Guid EventId { get; set; }
+        public Guid SeatTypeId { get; set; }
+        public Guid OrderId { get; set; }
+        public Guid UserId { get; set; }
+        public string QRCodeUrl { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
     }
 
 }

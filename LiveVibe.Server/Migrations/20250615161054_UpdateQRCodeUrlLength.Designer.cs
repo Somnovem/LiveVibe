@@ -4,6 +4,7 @@ using LiveVibe.Server.Models.Tables;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LiveVibe.Server.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    partial class ApplicationContextModelSnapshot : ModelSnapshot
+    [Migration("20250615161054_UpdateQRCodeUrlLength")]
+    partial class UpdateQRCodeUrlLength
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -151,14 +154,8 @@ namespace LiveVibe.Server.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<decimal>("TotalPrice")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("WasRefunded")
-                        .HasColumnType("bit");
 
                     b.HasKey("Id");
 
@@ -211,9 +208,6 @@ namespace LiveVibe.Server.Migrations
                     b.Property<Guid>("OrderId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<decimal>("Price")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<string>("QRCodeUrl")
                         .HasColumnType("nvarchar(max)");
 
@@ -224,9 +218,6 @@ namespace LiveVibe.Server.Migrations
                     b.Property<Guid>("SeatingCategoryId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<bool>("WasRefunded")
-                        .HasColumnType("bit");
-
                     b.HasKey("Id");
 
                     b.HasIndex("EventId");
@@ -236,6 +227,41 @@ namespace LiveVibe.Server.Migrations
                     b.HasIndex("SeatingCategoryId");
 
                     b.ToTable("Tickets");
+                });
+
+            modelBuilder.Entity("LiveVibe.Server.Models.Tables.TicketPurchase", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("PurchasePrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("TicketId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("WasRefunded")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TicketId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Ticket_Purchases", null, t =>
+                        {
+                            t.HasTrigger("trg_DecreaseSeatsOnPurchase");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
             modelBuilder.Entity("LiveVibe.Server.Models.Tables.User", b =>
@@ -498,7 +524,7 @@ namespace LiveVibe.Server.Migrations
             modelBuilder.Entity("LiveVibe.Server.Models.Tables.Order", b =>
                 {
                     b.HasOne("LiveVibe.Server.Models.Tables.User", "User")
-                        .WithMany("Orders")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -531,6 +557,25 @@ namespace LiveVibe.Server.Migrations
                     b.Navigation("Order");
 
                     b.Navigation("SeatingCategory");
+                });
+
+            modelBuilder.Entity("LiveVibe.Server.Models.Tables.TicketPurchase", b =>
+                {
+                    b.HasOne("LiveVibe.Server.Models.Tables.Ticket", "Ticket")
+                        .WithMany()
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LiveVibe.Server.Models.Tables.User", "User")
+                        .WithMany("TicketPurchases")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Ticket");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -618,7 +663,7 @@ namespace LiveVibe.Server.Migrations
 
             modelBuilder.Entity("LiveVibe.Server.Models.Tables.User", b =>
                 {
-                    b.Navigation("Orders");
+                    b.Navigation("TicketPurchases");
                 });
 #pragma warning restore 612, 618
         }

@@ -15,6 +15,7 @@ using LiveVibe.Server.HelperClasses;
 using LiveVibe.Server.HelperClasses.Extensions;
 using LiveVibe.Server.Models.DTOs.Shared;
 using LiveVibe.Server.Models.DTOs.Responses;
+using LiveVibe.Server.Models.DTOs.Models;
 
 namespace LiveVibe.Server.Controllers
 {
@@ -196,34 +197,72 @@ namespace LiveVibe.Server.Controllers
                 return Unauthorized(new ErrorDTO("Invalid credentials (user no longer exists)."));
             }
 
-            var ticketDTOs = await _context.TicketPurchases
-                .Where(tp => tp.UserId == user.Id)
-                .Include(tp => tp.Ticket)
-                .Include(tp => tp.Ticket.Event)
-                .Include(tp => tp.Ticket.Event.EventCategory)
-                .Include(tp => tp.Ticket.SeatingCategory)
-                .Select(tp => new TicketDTO
+            var ticketDTOs = await _context.Orders
+                .AsNoTracking()
+                .Where(o => o.UserId == user.Id)
+                .SelectMany(o => o.Tickets)
+                .Select(t => new TicketDTO
                 {
-                    Id = tp.Ticket.Id,
-                    Event = new Models.DTOs.Models.ShortEventDTO
-                    {
-                        Id = tp.Ticket.EventId,
-                        Title = tp.Ticket.Event.Title,
-                            Description = !string.IsNullOrEmpty(tp.Ticket.Event.Description)
-                            ? (tp.Ticket.Event.Description.Length > 50 ? tp.Ticket.Event.Description.Substring(0, 50) + "..." : tp.Ticket.Event.Description)
-                            : null,
-                        Category = tp.Ticket.Event.EventCategory.Name,
-                        Time = tp.Ticket.Event.Time,
-                        ImageUrl = tp.Ticket.Event.ImageUrl,
-                    },
-                    SeatingCategoryType = tp.Ticket.SeatingCategory.Name,
-                    Seat = tp.Ticket.Seat,
-                    Price = tp.PurchasePrice,
-                    WasRefunded = tp.WasRefunded
+                    Id = t.Id,
+                    EventId = t.EventId,
+                    SeatTypeId = t.SeatingCategoryId,
+                    OrderId = t.OrderId,
+                    UserId = user.Id,
+                    QRCodeUrl = t.QRCodeUrl!,
+                    CreatedAt = t.CreatedAt
                 })
                 .ToListAsync();
 
             return Ok(ticketDTOs);
+        }
+
+        [Authorize(Roles = "User")]
+        [HttpGet("my-orders")]
+        [SwaggerOperation(Summary = "[User] Get user's orders.", Description = "Retrieves the orders purchased by the logged-in user.")]
+        [SwaggerResponse(200, "Orders retrieved successfully", typeof(List<OrderDTO>))]
+        [SwaggerResponse(401, "Unauthorized: user must be authenticated as User.", typeof(ErrorDTO))]
+        public async Task<ActionResult<List<OrderDTO>>> MyOrders()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                await HttpContext.SignOutAsync(JwtBearerDefaults.AuthenticationScheme);
+                return Unauthorized(new ErrorDTO("Invalid credentials (user ID missing in token)."));
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                await HttpContext.SignOutAsync(JwtBearerDefaults.AuthenticationScheme);
+                return Unauthorized(new ErrorDTO("Invalid credentials (user no longer exists)."));
+            }
+
+            var orderDTOs = await _context.Orders
+                .AsNoTracking()
+                .Where(o => o.UserId == user.Id)
+                .Select(o => new OrderDTO()
+                {
+                    Id = o.Id,
+                    UserId = o.UserId,
+                    Status = o.WasRefunded ? "Refunded" : "Paid",
+                    CreatedAt = o.CreatedAt,
+                    Firstname = user.FirstName,
+                    Lastname = user.LastName,
+                    Email = user.Email!,
+                    Tickets = o.Tickets.Select(t => new TicketDTO
+                    {
+                        Id = t.Id,
+                        EventId = t.EventId,
+                        SeatTypeId = t.SeatingCategoryId,
+                        OrderId = t.OrderId,
+                        UserId = user.Id,
+                        QRCodeUrl = t.QRCodeUrl!,
+                        CreatedAt = t.CreatedAt
+                    }).ToList()
+                })
+                .ToListAsync();
+
+            return Ok(orderDTOs);
         }
 
         [Authorize(Roles = "User,Admin")]

@@ -27,7 +27,6 @@ namespace LiveVibe.Server.HelperClasses
             await SeedOrganizersAsync();
             await SeedEventsAsync();
             await SeedEventSeatTypesAndTicketsAsync();
-            await SeedTicketPurchasesAsync();
         }
 
         private static async Task SeedRolesAsync()
@@ -270,7 +269,7 @@ namespace LiveVibe.Server.HelperClasses
                         CategoryId = EventCategoryIds.Festival,
                         Location = "Міжнародний Виставковий Центр",
                         CityId = CityIds.Kyiv,
-                        Time = new DateTime(2025, 6, 7, 10, 0, 0),
+                        Time = now.AddMonths(2).AddDays(3),
                         CreatedAt = now,
                         UpdatedAt = now,
                         ImageUrl = "/images/events/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2.jpg"
@@ -284,7 +283,7 @@ namespace LiveVibe.Server.HelperClasses
                         CategoryId = EventCategoryIds.Concert,
                         Location = "Територія !FESTrepublic",
                         CityId = CityIds.Lviv,
-                        Time = new DateTime(2025, 6, 27, 19, 0, 0),
+                        Time = now.AddDays(13),
                         CreatedAt = now,
                         UpdatedAt = now,
                         ImageUrl = "/images/events/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3.jpg"
@@ -298,7 +297,7 @@ namespace LiveVibe.Server.HelperClasses
                         CategoryId = EventCategoryIds.Concert,
                         Location = "Палац спорту",
                         CityId = CityIds.Kyiv,
-                        Time = new DateTime(2025, 9, 20, 20, 0, 0),
+                        Time = now.AddMonths(1).AddDays(4),
                         CreatedAt = now,
                         UpdatedAt = now,
                         ImageUrl = "/images/events/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa4.jpg"
@@ -354,7 +353,7 @@ namespace LiveVibe.Server.HelperClasses
                         CategoryId = EventCategoryIds.Concert,
                         Location = "Філармонія імені Л. Когана",
                         CityId = CityIds.Dnipro,
-                        Time = new DateTime(2025, 7, 15, 19, 0, 0),
+                        Time = now.AddMonths(-1).AddDays(5),
                         CreatedAt = now,
                         UpdatedAt = now,
                         ImageUrl = "/images/events/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa8.jpg"
@@ -368,7 +367,7 @@ namespace LiveVibe.Server.HelperClasses
                         CategoryId = EventCategoryIds.Concert,
                         Location = "МЦКМ (Жовтневий палац)",
                         CityId = CityIds.Kyiv,
-                        Time = new DateTime(2025, 9, 19, 19, 0, 0),
+                        Time = now.AddMonths(3).AddDays(6),
                         CreatedAt = now,
                         UpdatedAt = now,
                         ImageUrl = "/images/events/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa9.jpg"
@@ -382,7 +381,7 @@ namespace LiveVibe.Server.HelperClasses
                         CategoryId = EventCategoryIds.Theater,
                         Location = "Центральний будинок ЗСУ",
                         CityId = CityIds.Kyiv,
-                        Time = new DateTime(2025, 6, 6, 19, 0, 0),
+                        Time = now.AddDays(15),
                         CreatedAt = now,
                         UpdatedAt = now,
                         ImageUrl = "/images/events/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa10.jpg"
@@ -396,7 +395,7 @@ namespace LiveVibe.Server.HelperClasses
                         CategoryId = EventCategoryIds.Concert,
                         Location = "Львівська обласна філармонія",
                         CityId = CityIds.Lviv,
-                        Time = new DateTime(2025, 7, 10, 19, 0, 0),
+                        Time = now.AddMonths(1).AddDays(-4),
                         CreatedAt = now,
                         UpdatedAt = now,
                         ImageUrl = "/images/events/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa11.jpg"
@@ -410,7 +409,7 @@ namespace LiveVibe.Server.HelperClasses
                         CategoryId = EventCategoryIds.Concert,
                         Location = "Malevich Concert Arena",
                         CityId = CityIds.Lviv,
-                        Time = new DateTime(2025, 8, 5, 20, 0, 0),
+                        Time = now.AddDays(7),
                         CreatedAt = now,
                         UpdatedAt = now,
                         ImageUrl = "/images/events/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa12.jpg"
@@ -424,7 +423,7 @@ namespace LiveVibe.Server.HelperClasses
                         CategoryId = EventCategoryIds.Concert,
                         Location = "Тераса !FESTrepublic",
                         CityId = CityIds.Lviv,
-                        Time = new DateTime(2025, 6, 21, 19, 0, 0),
+                        Time = now.AddDays(9),
                         CreatedAt = now,
                         UpdatedAt = now,
                         ImageUrl = "/images/events/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa13.jpg"
@@ -438,7 +437,7 @@ namespace LiveVibe.Server.HelperClasses
                         CategoryId = EventCategoryIds.Concert,
                         Location = "Театр музкомедії ім. Водяного",
                         CityId = CityIds.Odesa,
-                        Time = new DateTime(2025, 7, 20, 18, 30, 0),
+                        Time = now.AddDays(-5),
                         CreatedAt = now,
                         UpdatedAt = now,
                         ImageUrl = "/images/events/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa14.jpg"
@@ -452,7 +451,7 @@ namespace LiveVibe.Server.HelperClasses
                         CategoryId = EventCategoryIds.Concert,
                         Location = "Golden Hall",
                         CityId = CityIds.Kharkiv,
-                        Time = new DateTime(2025, 6, 15, 19, 0, 0),
+                        Time = now.AddDays(-3),
                         CreatedAt = now,
                         UpdatedAt = now,
                         ImageUrl = "/images/events/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa15.jpg"
@@ -466,7 +465,7 @@ namespace LiveVibe.Server.HelperClasses
                         CategoryId = EventCategoryIds.Festival,
                         Location = "!FESTrepublic",
                         CityId = CityIds.Lviv,
-                        Time = new DateTime(2025, 8, 1, 11, 0, 0),
+                        Time = now.AddMonths(4).AddDays(8),
                         CreatedAt = now,
                         UpdatedAt = now,
                         ImageUrl = "/images/events/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa16.jpg"
@@ -480,7 +479,7 @@ namespace LiveVibe.Server.HelperClasses
                         CategoryId = EventCategoryIds.Concert,
                         Location = "Golden Hall",
                         CityId = CityIds.Kharkiv,
-                        Time = new DateTime(2025, 6, 21, 18, 30, 0),
+                        Time = now.AddDays(5),
                         CreatedAt = now,
                         UpdatedAt = now,
                         ImageUrl = "/images/events/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa17.jpg"
@@ -494,7 +493,7 @@ namespace LiveVibe.Server.HelperClasses
                         CategoryId = EventCategoryIds.Concert,
                         Location = "Будинок Клоунів",
                         CityId = CityIds.Odesa,
-                        Time = new DateTime(2025, 6, 18, 19, 0, 0),
+                        Time = now.AddMonths(1).AddDays(3),
                         CreatedAt = now,
                         UpdatedAt = now,
                         ImageUrl = "/images/events/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa18.jpg"
@@ -508,7 +507,7 @@ namespace LiveVibe.Server.HelperClasses
                         CategoryId = EventCategoryIds.Theater,
                         Location = "Театр ім. Т. Г. Шевченка",
                         CityId = CityIds.Dnipro,
-                        Time = new DateTime(2025, 6, 12, 18, 0, 0),
+                        Time = now.AddDays(-1),
                         CreatedAt = now,
                         UpdatedAt = now,
                         ImageUrl = "/images/events/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa19.jpg"
@@ -522,7 +521,7 @@ namespace LiveVibe.Server.HelperClasses
                         CategoryId = EventCategoryIds.Concert,
                         Location = "!FESTrepublic",
                         CityId = CityIds.Lviv,
-                        Time = new DateTime(2025, 6, 7, 19, 0, 0),
+                        Time = now.AddMonths(3).AddDays(15),
                         CreatedAt = now,
                         UpdatedAt = now,
                         ImageUrl = "/images/events/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa20.jpg"
@@ -536,7 +535,7 @@ namespace LiveVibe.Server.HelperClasses
                         CategoryId = EventCategoryIds.Concert,
                         Location = "Театрально-концертний центр",
                         CityId = CityIds.Kharkiv,
-                        Time = new DateTime(2025, 6, 9, 18, 0, 0),
+                        Time = now.AddDays(19),
                         CreatedAt = now,
                         UpdatedAt = now,
                         ImageUrl = "/images/events/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa21.jpg"
@@ -550,7 +549,7 @@ namespace LiveVibe.Server.HelperClasses
                         CategoryId = EventCategoryIds.Concert,
                         Location = "Loft Stage",
                         CityId = CityIds.Kharkiv,
-                        Time = new DateTime(2025, 6, 11, 18, 30, 0),
+                        Time = now.AddMonths(2).AddDays(4),
                         CreatedAt = now,
                         UpdatedAt = now,
                         ImageUrl = "/images/events/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa22.jpg"
@@ -564,7 +563,7 @@ namespace LiveVibe.Server.HelperClasses
                         CategoryId = EventCategoryIds.Theater,
                         Location = "Львівський академічний драматичний театр ім. Лесі Українки",
                         CityId = CityIds.Lviv,
-                        Time = new DateTime(2025, 6, 10, 19, 0, 0),
+                        Time = now.AddMonths(3).AddDays(-16),
                         CreatedAt = now,
                         UpdatedAt = now,
                         ImageUrl = "/images/events/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa23.jpg"
@@ -578,7 +577,7 @@ namespace LiveVibe.Server.HelperClasses
                         CategoryId = EventCategoryIds.Theater,
                         Location = "Одеський національний академічний театр драми",
                         CityId = CityIds.Odesa,
-                        Time = new DateTime(2025, 6, 14, 18, 30, 0),
+                        Time = now.AddMonths(1).AddDays(1),
                         CreatedAt = now,
                         UpdatedAt = now,
                         ImageUrl = "/images/events/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa24.jpg"
@@ -592,7 +591,7 @@ namespace LiveVibe.Server.HelperClasses
                         CategoryId = EventCategoryIds.Theater,
                         Location = "Харківський театр ім. Пушкіна",
                         CityId = CityIds.Kharkiv,
-                        Time = new DateTime(2025, 6, 22, 19, 0, 0),
+                        Time = now.AddDays(8),
                         CreatedAt = now,
                         UpdatedAt = now,
                         ImageUrl = "/images/events/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa25.jpg"
@@ -735,82 +734,12 @@ namespace LiveVibe.Server.HelperClasses
                 new() { Id = Guid.NewGuid(), EventId = Guid.Parse("44444444-4444-4444-4444-444444444425"), Name = "Economy", Capacity = 220, AvailableSeats = 220, Price = 350.00 }
             };
 
-            foreach (var seatType in seatTypes)
-            {
-                _context.EventSeatTypes.Add(seatType);
-
-                for (int i = 1; i <= seatType.Capacity; i++)
-                {
-                    var ticket = new Ticket
-                    {
-                        Id = Guid.NewGuid(),
-                        EventId = seatType.EventId,
-                        SeatingCategoryId = seatType.Id,
-                        Seat = $"{seatType.Name}-{i:D3}"
-                    };
-
-                    _context.Tickets.Add(ticket);
-                }
-            }
-
             _context.EventSeatTypes.AddRange(seatTypes);
             await _context.SaveChangesAsync();
         }
 
-        public static async Task SeedTicketPurchasesAsync()
-        {
-            if (_context!.TicketPurchases.Any()) return;
+        // seed order
 
-            var now = DateTime.UtcNow;
-
-            var tickets = await _context.Tickets
-                .AsNoTracking()
-                .Include(t => t.SeatingCategory)
-                .OrderBy(r => Guid.NewGuid())
-                .Take(4)
-                .ToListAsync();
-
-            if (tickets.Count < 4)
-                throw new Exception("Not enough tickets found in database!");
-
-            var ticketPurchases = new List<TicketPurchase>
-            {
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = UserIds.User1,
-                    TicketId = tickets[0].Id,
-                    CreatedAt = now,
-                    PurchasePrice = Convert.ToDecimal(tickets[0].SeatingCategory.Price)
-                },
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = UserIds.User1,
-                    TicketId = tickets[1].Id,
-                    CreatedAt = now,
-                    PurchasePrice = Convert.ToDecimal(tickets[1].SeatingCategory.Price)
-                },
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = UserIds.User2,
-                    TicketId = tickets[2].Id,
-                    CreatedAt = now,
-                    PurchasePrice = Convert.ToDecimal(tickets[2].SeatingCategory.Price)
-                },
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = UserIds.User3,
-                    TicketId = tickets[3].Id,
-                    CreatedAt = now,
-                    PurchasePrice = Convert.ToDecimal(tickets[3].SeatingCategory.Price)
-                }
-            };
-
-            _context.TicketPurchases.AddRange(ticketPurchases);
-            await _context.SaveChangesAsync();
-        }
+        // seed tickets
     }
 }
