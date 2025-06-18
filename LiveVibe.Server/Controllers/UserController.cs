@@ -201,11 +201,14 @@ namespace LiveVibe.Server.Controllers
                 .AsNoTracking()
                 .Where(o => o.UserId == user.Id)
                 .SelectMany(o => o.Tickets)
+                .Include(t => t.Event)
                 .Select(t => new TicketDTO
                 {
                     Id = t.Id,
                     EventId = t.EventId,
+                    EventName = t.Event.Title,
                     SeatTypeId = t.SeatingCategoryId,
+                    Seat = t.Seat,
                     OrderId = t.OrderId,
                     UserId = user.Id,
                     QRCodeUrl = $"http://localhost:5000/api/tickets/{t.Id}/qrcode",
@@ -239,6 +242,8 @@ namespace LiveVibe.Server.Controllers
 
             var orderDTOs = await _context.Orders
                 .AsNoTracking()
+                .Include(o => o.Tickets)
+                .ThenInclude(t => t.Event)
                 .Where(o => o.UserId == user.Id)
                 .Select(o => new OrderDTO()
                 {
@@ -253,7 +258,9 @@ namespace LiveVibe.Server.Controllers
                     {
                         Id = t.Id,
                         EventId = t.EventId,
+                        EventName = t.Event.Title,
                         SeatTypeId = t.SeatingCategoryId,
+                        Seat = t.Seat,
                         OrderId = t.OrderId,
                         UserId = user.Id,
                         QRCodeUrl = $"http://localhost:5000/api/tickets/{t.Id}/qrcode",
