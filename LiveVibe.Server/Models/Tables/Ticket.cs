@@ -26,7 +26,7 @@ namespace LiveVibe.Server.Models.Tables
         public string Seat { get; set; } = string.Empty;
 
         [Column(TypeName = "nvarchar(max)")]
-        public string? QRCodeUrl { get; set; }
+        public string? QRCodeSvg { get; set; }
 
         [Required]
         [Column(TypeName = "datetime2")]

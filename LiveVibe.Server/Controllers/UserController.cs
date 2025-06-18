@@ -208,7 +208,7 @@ namespace LiveVibe.Server.Controllers
                     SeatTypeId = t.SeatingCategoryId,
                     OrderId = t.OrderId,
                     UserId = user.Id,
-                    QRCodeUrl = t.QRCodeUrl!,
+                    QRCodeUrl = $"http://localhost:5000/api/tickets/{t.Id}/qrcode",
                     CreatedAt = t.CreatedAt
                 })
                 .ToListAsync();
@@ -256,7 +256,7 @@ namespace LiveVibe.Server.Controllers
                         SeatTypeId = t.SeatingCategoryId,
                         OrderId = t.OrderId,
                         UserId = user.Id,
-                        QRCodeUrl = t.QRCodeUrl!,
+                        QRCodeUrl = $"http://localhost:5000/api/tickets/{t.Id}/qrcode",
                         CreatedAt = t.CreatedAt
                     }).ToList()
                 })

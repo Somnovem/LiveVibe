@@ -69,17 +69,17 @@ namespace LiveVibe.Server.Controllers
                 return NotFound(new ErrorDTO("Ticket not found."));
 
             // The QR code for this ticket has not been generated yet.
-            if (string.IsNullOrEmpty(ticket.QRCodeUrl))
+            if (string.IsNullOrEmpty(ticket.QRCodeSvg))
             {
                 var ticketUrl = $"http://localhost:5000/api/tickets/{id}";
 
                 var qrCodeSvg = _qrCodeService.GenerateQRCodeSvg(ticketUrl);
 
-                ticket.QRCodeUrl = qrCodeSvg;
+                ticket.QRCodeSvg = qrCodeSvg;
                 await _context.SaveChangesAsync();
             }
 
-            return Ok(ticket.QRCodeUrl);
+            return Ok(ticket.QRCodeSvg);
         }
     }
 }

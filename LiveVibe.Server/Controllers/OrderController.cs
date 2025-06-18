@@ -167,7 +167,7 @@ namespace LiveVibe.Server.Controllers
                         Price = Convert.ToDecimal(_eventSeatType.Price),
                         WasRefunded = false,
                         Seat = $"{_eventSeatType.Name}-{seatNumber:D3}",
-                        QRCodeUrl = qrCodeSvg,
+                        QRCodeSvg = qrCodeSvg,
                         CreatedAt = DateTime.UtcNow,
                     });
                     seatNumber++;

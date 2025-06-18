@@ -39,6 +39,27 @@
             color: #28a745;
             margin-top: 10px;
         }
+        .qr-code {
+            margin-top: 10px;
+            text-align: center;
+        }
+        .qr-code img {
+            max-width: 200px;
+            height: auto;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            margin: 20px auto;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -149,7 +170,9 @@
                                                     <strong>Seat Type ID:</strong> ${ticket.seatTypeId}<br>
                                                     <strong>Created:</strong> ${new Date(ticket.createdAt).toLocaleString()}
                                                 </p>
-                                                ${ticket.qrCodeUrl ? `<div class="qr-code">${ticket.qrCodeUrl}</div>` : ''}
+                                                <div class="qr-code" id="qr-${ticket.id}">
+                                                    <div class="spinner"></div>
+                                                </div>
                                             </div>
                                         </div>
                                     `).join('')}
@@ -157,11 +180,40 @@
                             </div>
                         </div>
                     `).join('');
+
+                    // Load QR codes after rendering orders
+                    orders.forEach(order => {
+                        order.tickets.forEach(ticket => {
+                            loadQRCode(ticket.id, ticket.qrCodeUrl);
+                        });
+                    });
                 } else {
                     ordersList.innerHTML = '<div class="alert alert-danger">Failed to load orders</div>';
                 }
             } catch (error) {
                 ordersList.innerHTML = '<div class="alert alert-danger">An error occurred while loading orders</div>';
+            }
+        }
+
+        // Load QR code for a ticket
+        async function loadQRCode(ticketId, qrCodeUrl) {
+            const qrContainer = document.getElementById(`qr-${ticketId}`);
+            
+            try {
+                const response = await fetch(qrCodeUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const svgText = await response.text();
+                    qrContainer.innerHTML = svgText;
+                } else {
+                    qrContainer.innerHTML = '<div class="alert alert-danger">Failed to load QR code</div>';
+                }
+            } catch (error) {
+                qrContainer.innerHTML = '<div class="alert alert-danger">Error loading QR code</div>';
             }
         }
 
