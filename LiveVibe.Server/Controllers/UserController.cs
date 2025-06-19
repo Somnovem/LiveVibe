@@ -148,8 +148,8 @@ namespace LiveVibe.Server.Controllers
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
             var token = JWTTokenGenerator.GenerateToken(_config, claims);
-
-            return Ok(new TokenDTO(token,"Bearer"));
+            var isAdmin = await _userManager.IsInRoleAsync(user, "Admin") ||  await _userManager.IsInRoleAsync(user, "SuperAdmin");
+            return Ok(new TokenDTO(token,"Bearer", isAdmin));
         }
 
         [Authorize]

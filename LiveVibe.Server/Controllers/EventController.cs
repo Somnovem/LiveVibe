@@ -159,6 +159,9 @@ namespace LiveVibe.Server.Controllers
                 );
             }
 
+            if (searchRequest.OrderByTime)
+                query = query.OrderBy(e => e.Time);
+
             var rawResults = await query 
                                     .OrderBy(e => e.Time)
                                     .ToPagedListAsync(searchRequest.PageNumber, searchRequest.PageSize);
