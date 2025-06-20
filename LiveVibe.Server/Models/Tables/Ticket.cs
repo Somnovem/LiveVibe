@@ -17,9 +17,8 @@ namespace LiveVibe.Server.Models.Tables
         [ForeignKey("SeatingCategory")]
         public Guid SeatingCategoryId { get; set; }
 
-        [Required]
         [ForeignKey("Order")]
-        public Guid OrderId { get; set; }
+        public Guid? OrderId { get; set; }
 
         [Required]
         [Column(TypeName = "varchar(50)")]

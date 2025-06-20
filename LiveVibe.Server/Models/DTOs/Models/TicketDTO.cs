@@ -9,7 +9,7 @@ namespace LiveVibe.Server.Models.DTOs.ModelDTOs
         public string EventName { get; set; } = string.Empty;
         public Guid SeatTypeId { get; set; }
         public string Seat { get; set; } = string.Empty;
-        public Guid OrderId { get; set; }
+        public Guid? OrderId { get; set; }
         public Guid UserId { get; set; }
         public string QRCodeUrl { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
