@@ -136,14 +136,14 @@ internal class Program
 
             await context.Database.MigrateAsync();
 
-            var purchaseTicketScript = await File.ReadAllTextAsync("Scripts/PurchaseTicketTrigger.sql");
-            await context.Database.ExecuteSqlRawAsync(purchaseTicketScript);
+            // var purchaseTicketScript = await File.ReadAllTextAsync("Scripts/PurchaseTicketTrigger.sql");
+            // await context.Database.ExecuteSqlRawAsync(purchaseTicketScript);
+            //
+            // var refundTicketScript = await File.ReadAllTextAsync("Scripts/RefundTicketTrigger.sql");
+            // await context.Database.ExecuteSqlRawAsync(refundTicketScript);
 
-            var refundTicketScript = await File.ReadAllTextAsync("Scripts/RefundTicketTrigger.sql");
-            await context.Database.ExecuteSqlRawAsync(refundTicketScript);
-
-            var seatsConstraintScript = await File.ReadAllTextAsync("Scripts/AvailableSeatsConstraint.sql");
-            await context.Database.ExecuteSqlRawAsync(seatsConstraintScript);
+            // var seatsConstraintScript = await File.ReadAllTextAsync("Scripts/AvailableSeatsConstraint.sql");
+            // await context.Database.ExecuteSqlRawAsync(seatsConstraintScript);
 
             await SeedData.InitializeAsync(services);
         }

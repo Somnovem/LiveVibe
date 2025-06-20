@@ -1,4 +1,5 @@
 ﻿using LiveVibe.Server.HelperClasses.Extensions;
+using LiveVibe.Server.Models.DTOs.Models;
 using LiveVibe.Server.Models.DTOs.Requests.EventSeatTypes;
 using LiveVibe.Server.Models.DTOs.Responses;
 using LiveVibe.Server.Models.DTOs.Shared;
@@ -63,7 +64,7 @@ namespace LiveVibe.Server.Controllers
         [SwaggerResponse(400, "Invalid input.")]
         [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
         [SwaggerResponse(409, "Same event seat type already exists", typeof(ErrorDTO))]
-        public async Task<ActionResult<EventSeatType>> CreateEventSeatType([FromBody] CreateEventSeatTypeRequest request)
+        public async Task<ActionResult<EventSeatTypeDTO>> CreateEventSeatType([FromBody] CreateEventSeatTypeRequest request)
         {
             if (!ModelState.IsValid)
             {
@@ -107,7 +108,7 @@ namespace LiveVibe.Server.Controllers
             return CreatedAtAction(
                 nameof(GetEventSeatTypeById),
                 new { id = eventSeatType.Id },
-                eventSeatType
+                eventSeatType.ToDto()
             );
         }
 

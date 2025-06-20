@@ -105,6 +105,8 @@ namespace LiveVibe.Server.HelperClasses
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 EmailConfirmed = true,
+                FirstName = "Admin",
+                LastName = "Admin",
             };
             await _userManager.CreateAsync(admin, "QweAsdZxc_1");
             await _userManager.AddToRoleAsync(admin, "Admin");
@@ -118,6 +120,8 @@ namespace LiveVibe.Server.HelperClasses
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 EmailConfirmed = true,
+                FirstName = "Super",
+                LastName = "Admin",
             };
             await _userManager.CreateAsync(superAdminUser, "QweAsdZxc_!23");
             await _userManager.AddToRoleAsync(superAdminUser, "SuperAdmin");
