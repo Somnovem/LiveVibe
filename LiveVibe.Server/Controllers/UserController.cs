@@ -50,7 +50,7 @@ namespace LiveVibe.Server.Controllers
                 .AsNoTracking()
                 .ToPagedListAsync(pageNumber, pageSize);
 
-            return Ok(users.ToDto());
+            return Ok(users.ToDto(x => x.ToDto()));
         }
 
         [Authorize(Roles = "Admin")]
@@ -61,11 +61,17 @@ namespace LiveVibe.Server.Controllers
         [SwaggerResponse(404, "User not found.", typeof(ErrorDTO))]
         public async Task<IActionResult> GetUserById(Guid id)
         {
-            var user = await _userManager.FindByIdAsync(id.ToString());
+            var user = await _userManager.Users
+                .AsNoTracking()
+                .Include(u => u.Orders)
+                .ThenInclude(o => o.Tickets)
+                .ThenInclude(t => t.Event)
+                .SingleOrDefaultAsync(x => x.Id == id);
+
             if (user == null)
                 return NotFound(new ErrorDTO("User not found."));
 
-            return Ok(user);
+            return Ok(user.ToExtendedDto());
         }
 
         [HttpPost("register")]
@@ -173,7 +179,7 @@ namespace LiveVibe.Server.Controllers
                 return Unauthorized(new ErrorDTO("Invalid credentials (user no longer exists)."));
             }
 
-            return Ok(new UserDTO(user));
+            return Ok(user.ToDto());
         }
 
         [Authorize(Roles = "User")]
@@ -202,18 +208,7 @@ namespace LiveVibe.Server.Controllers
                 .Where(o => o.UserId == user.Id)
                 .SelectMany(o => o.Tickets)
                 .Include(t => t.Event)
-                .Select(t => new TicketDTO
-                {
-                    Id = t.Id,
-                    EventId = t.EventId,
-                    EventName = t.Event.Title,
-                    SeatTypeId = t.SeatingCategoryId,
-                    Seat = t.Seat,
-                    OrderId = t.OrderId,
-                    UserId = user.Id,
-                    QRCodeUrl = $"http://localhost:5000/api/tickets/{t.Id}/qrcode",
-                    CreatedAt = t.CreatedAt
-                })
+                .Select(t => t.ToDto())
                 .ToListAsync();
 
             return Ok(ticketDTOs);
@@ -245,28 +240,7 @@ namespace LiveVibe.Server.Controllers
                 .Include(o => o.Tickets)
                 .ThenInclude(t => t.Event)
                 .Where(o => o.UserId == user.Id)
-                .Select(o => new OrderDTO()
-                {
-                    Id = o.Id,
-                    UserId = o.UserId,
-                    Status = o.WasRefunded ? "Refunded" : "Paid",
-                    CreatedAt = o.CreatedAt,
-                    Firstname = user.FirstName,
-                    Lastname = user.LastName,
-                    Email = user.Email!,
-                    Tickets = o.Tickets.Select(t => new TicketDTO
-                    {
-                        Id = t.Id,
-                        EventId = t.EventId,
-                        EventName = t.Event.Title,
-                        SeatTypeId = t.SeatingCategoryId,
-                        Seat = t.Seat,
-                        OrderId = t.OrderId,
-                        UserId = user.Id,
-                        QRCodeUrl = $"http://localhost:5000/api/tickets/{t.Id}/qrcode",
-                        CreatedAt = t.CreatedAt
-                    }).ToList()
-                })
+                .Select(o => o.ToDto(user))
                 .ToListAsync();
 
             return Ok(orderDTOs);
@@ -300,7 +274,7 @@ namespace LiveVibe.Server.Controllers
             if (!result.Succeeded)
                 return BadRequest(result.Errors);
 
-            return Ok(new UserDTO(user));
+            return Ok(user.ToDto());
         }
 
         [Authorize(Roles = "User,Admin")]

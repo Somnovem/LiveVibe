@@ -37,5 +37,19 @@ namespace LiveVibe.Server.HelperClasses.Extensions
                 HasNext = pagedList.HasNext
             };
         }
+
+        public static PagedListDTO<TDest> ToDto<TSrc, TDest>(this PagedList<TSrc> pagedList, Func<TSrc, TDest> selector)
+        {
+            return new PagedListDTO<TDest>
+            {
+                Items = pagedList.Select(selector).ToList(),
+                Page = pagedList.Page,
+                TotalPages = pagedList.TotalPages,
+                PageSize = pagedList.PageSize,
+                TotalCount = pagedList.TotalCount,
+                HasPrevious = pagedList.HasPrevious,
+                HasNext = pagedList.HasNext
+            };
+        }
     }
 }

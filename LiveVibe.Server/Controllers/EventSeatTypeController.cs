@@ -27,7 +27,7 @@ namespace LiveVibe.Server.Controllers
         [SwaggerOperation(Summary = "[Admin] Retrieve all event seat types.", Description = "Returns a list of all event seat types in the database.")]
         [SwaggerResponse(200, "Success", typeof(PagedListDTO<EventSeatType>))]
         [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
-        public async Task<ActionResult<PagedListDTO<EventSeatType>>> GetEventSeatTypes(
+        public async Task<ActionResult<PagedListDTO<EventSeatTypeDTO>>> GetEventSeatTypes(
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)
         {
@@ -38,7 +38,7 @@ namespace LiveVibe.Server.Controllers
                 .AsNoTracking()
                 .ToPagedListAsync(pageNumber, pageSize);
 
-            return Ok(seatTypes.ToDto());
+            return Ok(seatTypes.ToDto(x => x.ToDto()));
         }
 
         [Authorize(Roles = "Admin")]
@@ -47,13 +47,13 @@ namespace LiveVibe.Server.Controllers
         [SwaggerResponse(200, "Event seat type found.", typeof(EventSeatType))]
         [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
         [SwaggerResponse(404, "Event seat type not found.", typeof(ErrorDTO))]
-        public async Task<ActionResult<EventSeatType>> GetEventSeatTypeById(Guid id)
+        public async Task<ActionResult<EventSeatTypeDTO>> GetEventSeatTypeById(Guid id)
         {
             var eventSeatType = await _context.EventSeatTypes.FindAsync(id);
             if (eventSeatType == null)
                 return NotFound(new ErrorDTO("Event seat type not found."));
 
-            return Ok(eventSeatType);
+            return Ok(eventSeatType.ToDto());
         }
 
         [Authorize(Roles = "Admin")]
@@ -120,7 +120,7 @@ namespace LiveVibe.Server.Controllers
         [SwaggerResponse(401, "Unauthorized: user must be authenticated as Admin.")]
         [SwaggerResponse(404, "Event seat type not found", typeof(ErrorDTO))]
         [SwaggerResponse(409, "Same event seat type already exists", typeof(ErrorDTO))]
-        public async Task<ActionResult<EventSeatType>> UpdateEventSeatType([FromBody] UpdateEventSeatTypeRequest request)
+        public async Task<ActionResult<EventSeatTypeDTO>> UpdateEventSeatType([FromBody] UpdateEventSeatTypeRequest request)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -146,7 +146,7 @@ namespace LiveVibe.Server.Controllers
             _context.EventSeatTypes.Update(eventSeatType);
             await _context.SaveChangesAsync();
 
-            return Ok(eventSeatType);
+            return Ok(eventSeatType.ToDto());
         }
 
         [Authorize(Roles = "Admin")]
