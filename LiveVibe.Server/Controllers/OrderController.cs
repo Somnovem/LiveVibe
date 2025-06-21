@@ -176,6 +176,7 @@ namespace LiveVibe.Server.Controllers
             }
 
             _context.Tickets.AddRange(tickets);
+            _eventSeatType.AvailableSeats -= tickets.Count;
             await _context.SaveChangesAsync();
 
             tickets.AddRange(repurchasedTickets);
@@ -259,6 +260,10 @@ namespace LiveVibe.Server.Controllers
             }
 
             order.WasRefunded = true;
+            foreach (var ticketInOrder in order.Tickets)
+            {
+                ticketInOrder.SeatingCategory.AvailableSeats += 1;
+            }
             await _context.SaveChangesAsync();
 
             var emailBody = $@"
@@ -343,6 +348,8 @@ namespace LiveVibe.Server.Controllers
             {
                 order.WasRefunded = true;
             }
+
+            ticket.SeatingCategory.AvailableSeats += 1;
 
             await _context.SaveChangesAsync();
 

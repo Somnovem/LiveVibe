@@ -362,12 +362,48 @@ namespace LiveVibe.Server.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var _event = await _context.Events.FirstOrDefaultAsync(e => e.Id == id);
+            var _event = await _context.Events
+                .Include(e => e.EventSeatTypes)
+                    .ThenInclude(st => st.Tickets)
+                .FirstOrDefaultAsync(e => e.Id == id);
             if (_event == null)
                 return NotFound(new ErrorDTO("Event not found."));
 
+            // Delete all related tickets (with refund placeholder)
+            foreach (var seatType in _event.EventSeatTypes)
+            {
+                foreach (var ticket in seatType.Tickets.ToList())
+                {
+                    // Placeholder: If the event hasn't happened yet, do refund logic here
+                    if (_event.Time > DateTime.UtcNow)
+                    {
+                        // TODO: Implement refund logic for ticket
+                    }
+                    _context.Tickets.Remove(ticket);
+                }
+            }
+
+            // Delete all related seat types
+            foreach (var seatType in _event.EventSeatTypes.ToList())
+            {
+                _context.EventSeatTypes.Remove(seatType);
+            }
+
+            // Delete the event
             _context.Events.Remove(_event);
             await _context.SaveChangesAsync();
+
+            // Remove any now-empty orders after deleting the event and its tickets
+            var emptyOrders = await _context.Orders
+                .Include(o => o.Tickets)
+                .Where(o => !o.Tickets.Any())
+                .ToListAsync();
+
+            if (emptyOrders.Any())
+            {
+                _context.Orders.RemoveRange(emptyOrders);
+                await _context.SaveChangesAsync();
+            }
 
             return Ok(new SuccessDTO("Event deleted successfully."));
         }
